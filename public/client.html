@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="clientPage()" x-init="init()">
+      <div class="max-w-4xl mx-auto space-y-6">
+
+        <div class="flex items-center gap-3">
+          <a href="/clients.html" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">
+            <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i>Clients
+          </a>
+          <h1 class="text-2xl font-bold text-gray-900" x-text="client.display_name || 'Loading…'"></h1>
+          <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
+            :class="client.risk_rating === 'high' || client.risk_rating === 'pep' ? 'bg-red-100 text-red-700' : client.risk_rating === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'"
+            x-text="client.risk_rating"></span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- Client details card -->
+          <div class="lg:col-span-1 bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+            <h2 class="font-semibold text-gray-900">Details</h2>
+            <dl class="space-y-3 text-sm">
+              <div><dt class="text-xs text-gray-500">Type</dt><dd class="font-medium text-gray-900 capitalize" x-text="client.client_type || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Legal name</dt><dd class="font-medium text-gray-900" x-text="client.legal_name || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Email</dt><dd class="font-medium text-gray-900" x-text="client.email || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Phone</dt><dd class="font-medium text-gray-900" x-text="client.phone || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Parish</dt><dd class="font-medium text-gray-900" x-text="client.parish || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">TRN</dt><dd class="font-medium text-gray-900" x-text="client.tax_registration_number || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">National ID ref</dt><dd class="font-medium text-gray-900" x-text="client.national_id_reference || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Added</dt><dd class="font-medium text-gray-900" x-text="window.formatDate(client.created_at)"></dd></div>
+            </dl>
+          </div>
+
+          <!-- Matters for this client -->
+          <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 class="font-semibold text-gray-900">Matters</h2>
+              <a :href="'/matters.html#new?clientId=' + clientId" class="text-sm text-brand-600 hover:underline">+ New matter</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+              <template x-if="matters.length === 0">
+                <p class="px-5 py-8 text-center text-sm text-gray-500">No matters for this client.</p>
+              </template>
+              <template x-for="m in matters" :key="m.id">
+                <a :href="'/matter.html?id=' + m.id" class="flex items-center justify-between px-5 py-3 hover:bg-gray-50">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900" x-text="m.title"></p>
+                    <p class="text-xs text-gray-500" x-text="m.matter_number + ' · ' + (window.PRACTICE_AREA_LABELS[m.practice_area] || m.practice_area) + ' · ' + window.formatDate(m.opened_at)"></p>
+                  </div>
+                  <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
+                    :class="window.MATTER_STATUS_COLORS[m.status] || 'bg-gray-100 text-gray-700'" x-text="m.status.replace('_',' ')"></span>
+                </a>
+              </template>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+function clientPage() {
+  return {
+    clientId: new URLSearchParams(location.search).get('id'),
+    client: {}, matters: [],
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      lucide.createIcons();
+      if (!this.clientId) { window.location.href = '/clients.html'; return; }
+      await Promise.all([this.loadClient(), this.loadMatters()]);
+    },
+
+    async loadClient() {
+      const { data } = await window.sb.from('clients').select('*').eq('id', this.clientId).single();
+      this.client = data || {};
+      if (data) document.title = data.display_name + ' — LexJamaica';
+    },
+
+    async loadMatters() {
+      const { data } = await window.sb.from('matters')
+        .select('id, matter_number, title, practice_area, status, opened_at')
+        .eq('client_id', this.clientId)
+        .order('created_at', { ascending: false });
+      this.matters = data || [];
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

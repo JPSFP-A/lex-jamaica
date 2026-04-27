@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clients — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="clientsPage()" x-init="init()">
+      <div class="max-w-6xl mx-auto space-y-5">
+
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-gray-900">Clients</h1>
+          <button @click="showNew = true" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-colors">
+            <i data-lucide="plus" class="h-4 w-4"></i>New Client
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="flex gap-3 flex-wrap">
+          <div class="relative flex-1 max-w-xs">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></i>
+            <input type="search" class="block w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none" placeholder="Search clients…" x-model="search" @input.debounce.400ms="load()" />
+          </div>
+          <select class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none bg-white" x-model="typeFilter" @change="load()">
+            <option value="">All types</option>
+            <option value="individual">Individual</option>
+            <option value="company">Company</option>
+            <option value="government">Government</option>
+            <option value="nonprofit">Non-profit</option>
+          </select>
+        </div>
+
+        <!-- New client form -->
+        <div x-show="showNew" x-cloak class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+          <h2 class="font-semibold text-gray-900">New Client</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Client type *</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.client_type">
+                <option value="individual">Individual</option>
+                <option value="company">Company</option>
+                <option value="government">Government</option>
+                <option value="nonprofit">Non-profit</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Display name *</label>
+              <input class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.display_name" placeholder="Jane Doe" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.email" placeholder="jane@example.com" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.phone" placeholder="+1 876 555 0100" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Parish</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.parish">
+                <option value="">Select parish…</option>
+                <template x-for="p in window.JAMAICAN_PARISHES" :key="p"><option :value="p" x-text="p"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Risk rating</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.risk_rating">
+                <option value="standard">Standard</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="pep">PEP</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">TRN (Tax Registration Number)</label>
+              <input class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.tax_registration_number" placeholder="123-456-789" />
+            </div>
+          </div>
+          <div x-show="formError" class="text-sm text-red-600" x-text="formError"></div>
+          <div class="flex gap-2">
+            <button @click="save()" :disabled="saving" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+              <span x-show="saving" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+              <span x-text="saving ? 'Saving…' : 'Create Client'"></span>
+            </button>
+            <button @click="showNew = false; resetForm()" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Client list -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parish</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <template x-if="loading">
+                <tr><td colspan="5" class="px-5 py-10 text-center text-sm text-gray-400">Loading…</td></tr>
+              </template>
+              <template x-if="!loading && clients.length === 0">
+                <tr><td colspan="5" class="px-5 py-10 text-center text-sm text-gray-500">No clients found.</td></tr>
+              </template>
+              <template x-for="c in clients" :key="c.id">
+                <tr class="hover:bg-gray-50 cursor-pointer" @click="window.location.href = '/client.html?id=' + c.id">
+                  <td class="px-5 py-3">
+                    <p class="text-sm font-medium text-gray-900" x-text="c.display_name"></p>
+                    <p class="text-xs text-gray-400" x-text="c.legal_name || ''"></p>
+                  </td>
+                  <td class="px-5 py-3 text-sm text-gray-600 capitalize" x-text="c.client_type"></td>
+                  <td class="px-5 py-3 text-sm text-gray-600" x-text="c.email || '—'"></td>
+                  <td class="px-5 py-3 text-sm text-gray-600" x-text="c.parish || '—'"></td>
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
+                      :class="c.risk_rating === 'high' || c.risk_rating === 'pep' ? 'bg-red-100 text-red-700' : c.risk_rating === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'"
+                      x-text="c.risk_rating"></span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+function clientsPage() {
+  return {
+    clients: [], loading: true,
+    search: '', typeFilter: '',
+    showNew: false, saving: false, formError: '',
+    form: { client_type: 'individual', display_name: '', email: '', phone: '', parish: '', risk_rating: 'standard', tax_registration_number: '' },
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      lucide.createIcons();
+      if (window.location.hash === '#new') this.showNew = true;
+      await this.load();
+    },
+
+    async load() {
+      this.loading = true;
+      let q = window.sb.from('clients').select('*').order('display_name');
+      if (this.typeFilter) q = q.eq('client_type', this.typeFilter);
+      if (this.search) q = q.ilike('display_name', `%${this.search}%`);
+      const { data } = await q.limit(100);
+      this.clients = data || [];
+      this.loading = false;
+    },
+
+    async save() {
+      this.formError = '';
+      if (!this.form.display_name) { this.formError = 'Display name is required.'; return; }
+      this.saving = true;
+      const { error } = await window.sb.from('clients').insert({
+        ...this.form,
+        tenant_id: (await window.sb.auth.getUser()).data.user.user_metadata.tenant_id,
+      });
+      this.saving = false;
+      if (error) { this.formError = error.message; return; }
+      window.toast('Client created');
+      this.showNew = false;
+      this.resetForm();
+      await this.load();
+    },
+
+    resetForm() {
+      this.form = { client_type: 'individual', display_name: '', email: '', phone: '', parish: '', risk_rating: 'standard', tax_registration_number: '' };
+      this.formError = '';
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

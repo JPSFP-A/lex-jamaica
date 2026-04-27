@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Mobile header -->
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i>
+      <span class="font-bold">LexJamaica</span>
+    </div>
+
+    <main class="flex-1 overflow-y-auto p-6" x-data="dashboardPage()" x-init="init()">
+      <div class="max-w-6xl mx-auto space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Welcome back, <span x-text="firstName"></span></h1>
+          <p class="text-gray-500 text-sm mt-0.5" x-text="tenantName"></p>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a href="/clients.html" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4 hover:border-brand-300 transition-colors">
+            <div class="rounded-lg p-2.5 text-blue-600 bg-blue-50"><i data-lucide="users" class="h-5 w-5"></i></div>
+            <div><p class="text-2xl font-bold text-gray-900" x-text="stats.clients"></p><p class="text-sm text-gray-500">Total Clients</p></div>
+          </a>
+          <a href="/matters.html" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4 hover:border-brand-300 transition-colors">
+            <div class="rounded-lg p-2.5 text-green-600 bg-green-50"><i data-lucide="briefcase" class="h-5 w-5"></i></div>
+            <div><p class="text-2xl font-bold text-gray-900" x-text="stats.matters"></p><p class="text-sm text-gray-500">Active Matters</p></div>
+          </a>
+          <a href="/tasks.html" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4 hover:border-brand-300 transition-colors">
+            <div class="rounded-lg p-2.5 text-orange-600 bg-orange-50"><i data-lucide="alert-triangle" class="h-5 w-5"></i></div>
+            <div><p class="text-2xl font-bold text-gray-900" x-text="stats.overdue"></p><p class="text-sm text-gray-500">Overdue Tasks</p></div>
+          </a>
+          <a href="/invoices.html" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4 hover:border-brand-300 transition-colors">
+            <div class="rounded-lg p-2.5 text-purple-600 bg-purple-50"><i data-lucide="receipt" class="h-5 w-5"></i></div>
+            <div><p class="text-2xl font-bold text-gray-900" x-text="stats.ar"></p><p class="text-sm text-gray-500">AR Outstanding</p></div>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Recent matters -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 class="font-semibold text-gray-900 flex items-center gap-2"><i data-lucide="briefcase" class="h-4 w-4 text-gray-400"></i>Recent Matters</h2>
+              <a href="/matters.html" class="text-sm text-brand-600 hover:underline">View all</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+              <template x-if="matters.length === 0">
+                <p class="px-5 py-8 text-center text-sm text-gray-500">No matters yet.</p>
+              </template>
+              <template x-for="m in matters" :key="m.id">
+                <a :href="'/matter.html?id=' + m.id" class="flex items-center justify-between px-5 py-3 hover:bg-gray-50">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900" x-text="m.title"></p>
+                    <p class="text-xs text-gray-500" x-text="m.matter_number + ' · ' + (m.clients?.display_name || '') + ' · ' + (window.PRACTICE_AREA_LABELS[m.practice_area] || m.practice_area)"></p>
+                  </div>
+                  <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" :class="window.MATTER_STATUS_COLORS[m.status] || 'bg-gray-100 text-gray-700'" x-text="m.status"></span>
+                </a>
+              </template>
+            </div>
+          </div>
+
+          <!-- Upcoming events -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 class="font-semibold text-gray-900 flex items-center gap-2"><i data-lucide="calendar" class="h-4 w-4 text-gray-400"></i>Upcoming (7 days)</h2>
+              <a href="/calendar.html" class="text-sm text-brand-600 hover:underline">Calendar</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+              <template x-if="events.length === 0">
+                <p class="px-5 py-8 text-center text-sm text-gray-500">No upcoming events.</p>
+              </template>
+              <template x-for="e in events" :key="e.id">
+                <div class="px-5 py-3">
+                  <p class="text-sm font-medium text-gray-900" x-text="e.title"></p>
+                  <p class="text-xs text-gray-500" x-text="window.formatDateTime(e.starts_at) + ' · ' + e.event_type.replace('_',' ')"></p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="bg-brand-50 border border-brand-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <i data-lucide="zap" class="h-4 w-4 text-brand-600"></i>
+            <h2 class="font-semibold text-brand-900">Quick Actions</h2>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <a href="/clients.html#new" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">+ New Client</a>
+            <a href="/matters.html#new" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">+ New Matter</a>
+            <a href="/time.html#new" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">+ Log Time</a>
+            <a href="/tasks.html#new" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">+ New Task</a>
+            <a href="/calendar.html#new" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">+ Schedule Event</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+function dashboardPage() {
+  return {
+    firstName: '', tenantName: '',
+    stats: { clients: '—', matters: '—', overdue: '—', ar: '—' },
+    matters: [], events: [],
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      const meta = user.user_metadata || {};
+      this.firstName = (meta.full_name || '').split(' ')[0] || 'there';
+      this.tenantName = meta.tenant_name || '';
+      lucide.createIcons();
+      await Promise.all([this.loadStats(), this.loadMatters(), this.loadEvents()]);
+    },
+
+    async loadStats() {
+      const [{ count: clients }, { count: matters }, { data: overdue }, { data: ar }] = await Promise.all([
+        window.sb.from('clients').select('*', { count: 'exact', head: true }),
+        window.sb.from('matters').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+        window.sb.rpc('overdue_task_count'),
+        window.sb.rpc('ar_summary'),
+      ]);
+      this.stats.clients = clients ?? 0;
+      this.stats.matters = matters ?? 0;
+      this.stats.overdue = overdue ?? 0;
+      const arTotal = (ar || []).reduce((s, r) => s + Number(r.total_amount), 0);
+      this.stats.ar = window.formatCurrency(arTotal);
+    },
+
+    async loadMatters() {
+      const { data } = await window.sb
+        .from('matters')
+        .select('id, matter_number, title, practice_area, status, clients(display_name)')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      this.matters = data || [];
+    },
+
+    async loadEvents() {
+      const { data } = await window.sb.rpc('upcoming_events', { p_days: 7 });
+      this.events = (data || []).slice(0, 6);
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

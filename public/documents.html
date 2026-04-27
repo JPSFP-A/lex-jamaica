@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documents — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="documentsPage()" x-init="init()">
+      <div class="max-w-5xl mx-auto space-y-5">
+
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-gray-900">Documents</h1>
+          <div>
+            <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" @change="upload($event)" />
+            <button @click="$refs.fileInput.click()" :disabled="uploading"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+              <i data-lucide="upload" class="h-4 w-4"></i>
+              <span x-text="uploading ? 'Uploading…' : 'Upload File'"></span>
+            </button>
+            <input type="file" x-ref="fileInput" class="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" @change="upload($event)" />
+          </div>
+        </div>
+
+        <div x-show="uploadError" class="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" x-text="uploadError"></div>
+
+        <!-- Filters -->
+        <div class="flex gap-3 flex-wrap">
+          <div class="relative flex-1 max-w-xs">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></i>
+            <input type="search" class="block w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm focus:border-brand-500 outline-none" placeholder="Search by filename…" x-model="search" />
+          </div>
+          <select class="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:border-brand-500 outline-none" x-model="matterFilter" @change="load()">
+            <option value="">All matters</option>
+            <template x-for="m in matters" :key="m.id"><option :value="m.id" x-text="m.matter_number + ' — ' + m.title"></option></template>
+          </select>
+        </div>
+
+        <!-- Upload matter assignment -->
+        <div x-show="pendingFile" class="bg-white rounded-xl border border-brand-200 shadow-sm p-4 space-y-3">
+          <p class="text-sm font-medium text-gray-900">Assign "<span x-text="pendingFile?.name"></span>" to a matter (optional)</p>
+          <div class="flex gap-3">
+            <select class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="uploadMatterId">
+              <option value="">No matter</option>
+              <template x-for="m in matters" :key="m.id"><option :value="m.id" x-text="m.matter_number + ' — ' + m.title"></option></template>
+            </select>
+            <button @click="confirmUpload()" :disabled="uploading" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+              <span x-text="uploading ? 'Uploading…' : 'Upload'"></span>
+            </button>
+            <button @click="pendingFile = null" class="px-4 py-2 border border-gray-300 bg-white text-sm rounded-lg hover:bg-gray-50">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Documents table -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">File</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Matter</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Uploaded by</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <template x-if="loading"><tr><td colspan="6" class="px-5 py-10 text-center text-sm text-gray-400">Loading…</td></tr></template>
+              <template x-if="!loading && filtered.length === 0"><tr><td colspan="6" class="px-5 py-10 text-center text-sm text-gray-500">No documents found.</td></tr></template>
+              <template x-for="doc in filtered" :key="doc.id">
+                <tr class="hover:bg-gray-50 group">
+                  <td class="px-5 py-3">
+                    <div class="flex items-center gap-2">
+                      <span class="text-lg" x-text="mimeIcon(doc.mime_type)"></span>
+                      <div>
+                        <p class="text-sm font-medium text-gray-900" x-text="doc.file_name"></p>
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600" x-text="doc.confidentiality_level"></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="doc.matters?.matter_number || '—'"></td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="doc.users?.full_name || '—'"></td>
+                  <td class="px-5 py-3 text-sm text-gray-400" x-text="fileSize(doc.file_size_bytes)"></td>
+                  <td class="px-5 py-3 text-sm text-gray-400" x-text="window.formatDate(doc.created_at)"></td>
+                  <td class="px-5 py-3">
+                    <div class="flex gap-2 invisible group-hover:visible">
+                      <button @click="download(doc)" class="p-1 text-brand-600 hover:text-brand-800" title="Download">
+                        <i data-lucide="download" class="h-4 w-4"></i>
+                      </button>
+                      <button @click="deleteDoc(doc)" class="p-1 text-red-400 hover:text-red-600" title="Delete">
+                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-xs text-gray-400">Accepted: PDF, Word (.doc, .docx), Images (JPG, PNG), Plain text. Max 50 MB per file.</p>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+const MIME_ICONS = { 'application/pdf':'📄', 'application/msword':'📝', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'📝', 'image/jpeg':'🖼️', 'image/png':'🖼️', 'text/plain':'📃' };
+
+function documentsPage() {
+  return {
+    docs: [], matters: [], loading: true,
+    search: '', matterFilter: '',
+    uploading: false, uploadError: '',
+    pendingFile: null, uploadMatterId: '',
+    tenantId: '', userId: '',
+    storageBucket: 'documents',
+
+    get filtered() {
+      if (!this.search) return this.docs;
+      return this.docs.filter(d => d.file_name.toLowerCase().includes(this.search.toLowerCase()));
+    },
+
+    mimeIcon(mime) { return MIME_ICONS[mime] || '📄'; },
+    fileSize(bytes) {
+      if (!bytes) return '';
+      const b = Number(bytes);
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+      return (b/1048576).toFixed(1) + ' MB';
+    },
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      const meta = user.user_metadata || {};
+      this.tenantId = meta.tenant_id;
+      this.userId   = meta.user_id;
+      lucide.createIcons();
+      const { data: ml } = await window.sb.from('matters').select('id, matter_number, title').order('matter_number');
+      this.matters = ml || [];
+      await this.load();
+    },
+
+    async load() {
+      this.loading = true;
+      let q = window.sb.from('documents')
+        .select('*, matters(matter_number), users!documents_uploaded_by_user_id_fkey(full_name)')
+        .order('created_at', { ascending: false });
+      if (this.matterFilter) q = q.eq('matter_id', this.matterFilter);
+      const { data } = await q.limit(200);
+      this.docs = data || [];
+      this.loading = false;
+    },
+
+    upload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 50 * 1024 * 1024) { this.uploadError = 'File exceeds 50 MB limit.'; return; }
+      this.uploadError = '';
+      this.pendingFile = file;
+      this.uploadMatterId = this.matterFilter || '';
+      event.target.value = '';
+    },
+
+    async confirmUpload() {
+      if (!this.pendingFile) return;
+      this.uploading = true; this.uploadError = '';
+      const file = this.pendingFile;
+      const storageKey = `${this.tenantId}/${Date.now()}-${file.name}`;
+
+      const { error: storageErr } = await window.sb.storage.from(this.storageBucket).upload(storageKey, file);
+      if (storageErr) { this.uploadError = storageErr.message; this.uploading = false; return; }
+
+      const { error: dbErr } = await window.sb.from('documents').insert({
+        tenant_id:            this.tenantId,
+        uploaded_by_user_id:  this.userId,
+        matter_id:            this.uploadMatterId || null,
+        file_name:            file.name,
+        storage_key:          storageKey,
+        mime_type:            file.type || null,
+        file_size_bytes:      file.size,
+        confidentiality_level: 'matter_team',
+      });
+
+      this.uploading = false;
+      if (dbErr) { this.uploadError = dbErr.message; return; }
+      window.toast('File uploaded');
+      this.pendingFile = null;
+      await this.load();
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    async download(doc) {
+      const { data } = await window.sb.storage.from(this.storageBucket).createSignedUrl(doc.storage_key, 60);
+      if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+    },
+
+    async deleteDoc(doc) {
+      if (!confirm('Delete "' + doc.file_name + '"?')) return;
+      await window.sb.storage.from(this.storageBucket).remove([doc.storage_key]);
+      await window.sb.from('documents').delete().eq('id', doc.id);
+      window.toast('Document deleted');
+      await this.load();
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

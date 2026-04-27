@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matter — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="matterPage()" x-init="init()">
+      <div class="max-w-5xl mx-auto space-y-6">
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/matters.html" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">
+            <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i>Matters
+          </a>
+          <div class="flex-1 min-w-0">
+            <h1 class="text-xl font-bold text-gray-900 truncate" x-text="matter.title || 'Loading…'"></h1>
+            <p class="text-xs text-gray-500" x-text="matter.matter_number"></p>
+          </div>
+          <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
+            :class="window.MATTER_STATUS_COLORS[matter.status] || 'bg-gray-100 text-gray-700'" x-text="(matter.status||'').replace('_',' ')"></span>
+          <select class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs bg-white focus:border-brand-500 outline-none" x-model="matter.status" @change="updateStatus()">
+            <option value="intake">Intake</option>
+            <option value="open">Open</option>
+            <option value="on_hold">On Hold</option>
+            <option value="closed">Closed</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- Details -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+            <h2 class="font-semibold text-gray-900">Details</h2>
+            <dl class="space-y-2 text-sm">
+              <div><dt class="text-xs text-gray-500">Client</dt>
+                <dd><a :href="'/client.html?id=' + matter.client_id" class="font-medium text-brand-600 hover:underline" x-text="matter.clients?.display_name || '—'"></a></dd>
+              </div>
+              <div><dt class="text-xs text-gray-500">Practice area</dt><dd class="font-medium text-gray-900" x-text="window.PRACTICE_AREA_LABELS[matter.practice_area] || matter.practice_area || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Billing type</dt><dd class="font-medium text-gray-900 capitalize" x-text="matter.billing_type || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Parish</dt><dd class="font-medium text-gray-900" x-text="matter.parish || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Court</dt><dd class="font-medium text-gray-900" x-text="matter.court_name || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Court file #</dt><dd class="font-medium text-gray-900" x-text="matter.court_file_number || '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Budget</dt><dd class="font-medium text-gray-900" x-text="matter.budget_amount ? window.formatCurrency(matter.budget_amount) : '—'"></dd></div>
+              <div><dt class="text-xs text-gray-500">Opened</dt><dd class="font-medium text-gray-900" x-text="window.formatDate(matter.opened_at)"></dd></div>
+            </dl>
+          </div>
+
+          <!-- Tasks for this matter -->
+          <div class="lg:col-span-2 space-y-5">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="font-semibold text-gray-900">Tasks</h2>
+                <button @click="showTaskForm = !showTaskForm" class="text-sm text-brand-600 hover:underline">+ Add task</button>
+              </div>
+              <div x-show="showTaskForm" class="px-5 py-4 border-b border-gray-200 space-y-3 bg-gray-50">
+                <input class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="taskForm.title" placeholder="Task title…" />
+                <div class="flex gap-2">
+                  <select class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none bg-white" x-model="taskForm.priority">
+                    <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
+                  </select>
+                  <input type="datetime-local" class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="taskForm.due_at" />
+                </div>
+                <div class="flex gap-2">
+                  <button @click="addTask()" :disabled="!taskForm.title" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm rounded-lg">Add</button>
+                  <button @click="showTaskForm = false" class="px-3 py-1.5 border border-gray-300 bg-white text-sm rounded-lg hover:bg-gray-50">Cancel</button>
+                </div>
+              </div>
+              <div class="divide-y divide-gray-100">
+                <template x-if="tasks.length === 0"><p class="px-5 py-6 text-center text-sm text-gray-500">No tasks.</p></template>
+                <template x-for="t in tasks" :key="t.id">
+                  <div class="flex items-center gap-3 px-5 py-3">
+                    <button @click="toggleTask(t)" class="shrink-0">
+                      <i :data-lucide="t.status === 'done' ? 'check-circle-2' : 'circle'" :class="t.status === 'done' ? 'text-green-500' : 'text-gray-300'" class="h-4 w-4"></i>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm text-gray-900 truncate" :class="t.status === 'done' ? 'line-through text-gray-400' : ''" x-text="t.title"></p>
+                      <p class="text-xs text-gray-400" x-text="t.due_at ? 'Due ' + window.formatDateTime(t.due_at) : ''"></p>
+                    </div>
+                    <span class="text-xs capitalize px-2 py-0.5 rounded-full"
+                      :class="t.priority === 'urgent' ? 'bg-red-100 text-red-700' : t.priority === 'high' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'"
+                      x-text="t.priority"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Time entries -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="font-semibold text-gray-900">Time Entries</h2>
+                <a :href="'/time.html#new?matterId=' + matterId" class="text-sm text-brand-600 hover:underline">+ Log time</a>
+              </div>
+              <div class="divide-y divide-gray-100">
+                <template x-if="timeEntries.length === 0"><p class="px-5 py-6 text-center text-sm text-gray-500">No time logged.</p></template>
+                <template x-for="e in timeEntries" :key="e.id">
+                  <div class="flex items-center justify-between px-5 py-3">
+                    <div>
+                      <p class="text-sm text-gray-900" x-text="e.description"></p>
+                      <p class="text-xs text-gray-400" x-text="window.formatDate(e.entry_date) + ' · ' + Math.floor(e.duration_minutes/60) + 'h ' + (e.duration_minutes%60) + 'm'"></p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-sm font-medium text-gray-900" x-text="window.formatCurrency((e.duration_minutes/60)*e.hourly_rate)"></p>
+                      <span x-show="!e.invoice_id" class="text-xs text-orange-600">Unbilled</span>
+                      <span x-show="e.invoice_id" class="text-xs text-green-600">Billed</span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+function matterPage() {
+  return {
+    matterId: new URLSearchParams(location.search).get('id'),
+    matter: {}, tasks: [], timeEntries: [],
+    showTaskForm: false,
+    taskForm: { title: '', priority: 'normal', due_at: '' },
+    tenantId: '',
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      this.tenantId = user.user_metadata.tenant_id;
+      lucide.createIcons();
+      if (!this.matterId) { window.location.href = '/matters.html'; return; }
+      await Promise.all([this.loadMatter(), this.loadTasks(), this.loadTime()]);
+    },
+
+    async loadMatter() {
+      const { data } = await window.sb.from('matters').select('*, clients(display_name)').eq('id', this.matterId).single();
+      this.matter = data || {};
+      if (data) document.title = data.title + ' — LexJamaica';
+    },
+
+    async loadTasks() {
+      const { data } = await window.sb.from('tasks').select('*').eq('matter_id', this.matterId).order('created_at');
+      this.tasks = data || [];
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    async loadTime() {
+      const { data } = await window.sb.from('time_entries').select('*').eq('matter_id', this.matterId).order('entry_date', { ascending: false }).limit(20);
+      this.timeEntries = data || [];
+    },
+
+    async updateStatus() {
+      const { error } = await window.sb.from('matters').update({ status: this.matter.status }).eq('id', this.matterId);
+      if (error) window.toast(error.message, 'error');
+      else window.toast('Status updated');
+    },
+
+    async addTask() {
+      const { error } = await window.sb.from('tasks').insert({
+        tenant_id: this.tenantId, matter_id: this.matterId,
+        title: this.taskForm.title, priority: this.taskForm.priority,
+        due_at: this.taskForm.due_at || null, status: 'todo',
+      });
+      if (error) { window.toast(error.message, 'error'); return; }
+      this.taskForm = { title: '', priority: 'normal', due_at: '' };
+      this.showTaskForm = false;
+      await this.loadTasks();
+    },
+
+    async toggleTask(task) {
+      const newStatus = task.status === 'done' ? 'todo' : 'done';
+      await window.sb.from('tasks').update({ status: newStatus, completed_at: newStatus === 'done' ? new Date().toISOString() : null }).eq('id', task.id);
+      task.status = newStatus;
+      this.$nextTick(() => lucide.createIcons());
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tasks — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="tasksPage()" x-init="init()">
+      <div class="max-w-4xl mx-auto space-y-5">
+
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-gray-900">Tasks</h1>
+          <button @click="showNew = true" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg">
+            <i data-lucide="plus" class="h-4 w-4"></i>New Task
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex gap-2 flex-wrap">
+          <template x-for="f in ['all','todo','in_progress','done','overdue']" :key="f">
+            <button @click="statusFilter = f; load()"
+              :class="statusFilter === f ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+              class="px-3 py-1.5 rounded-lg border text-sm font-medium capitalize transition-colors" x-text="f.replace('_',' ')"></button>
+          </template>
+        </div>
+
+        <!-- New task form -->
+        <div x-show="showNew" x-cloak class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+          <h2 class="font-semibold text-gray-900">New Task</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+              <input class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.title" placeholder="Task description…" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Matter</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.matter_id">
+                <option value="">No matter</option>
+                <template x-for="m in matters" :key="m.id"><option :value="m.id" x-text="m.matter_number + ' — ' + m.title"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.priority">
+                <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Due date/time</label>
+              <input type="datetime-local" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.due_at" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea rows="2" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.description" placeholder="Optional notes…"></textarea>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button @click="save()" :disabled="saving || !form.title" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+              <span x-show="saving" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+              <span x-text="saving ? 'Saving…' : 'Create Task'"></span>
+            </button>
+            <button @click="showNew = false" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Task list -->
+        <div class="space-y-2">
+          <template x-if="loading"><p class="text-center text-sm text-gray-400 py-8">Loading…</p></template>
+          <template x-if="!loading && tasks.length === 0"><p class="text-center text-sm text-gray-500 py-8">No tasks found.</p></template>
+          <template x-for="t in tasks" :key="t.id">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm flex items-start gap-3 px-4 py-3"
+              :class="isOverdue(t) ? 'border-red-200 bg-red-50' : ''">
+              <button @click="toggleTask(t)" class="mt-0.5 shrink-0">
+                <i :data-lucide="t.status === 'done' ? 'check-circle-2' : 'circle'"
+                   :class="t.status === 'done' ? 'text-green-500' : isOverdue(t) ? 'text-red-400' : 'text-gray-300'" class="h-5 w-5"></i>
+              </button>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900" :class="t.status === 'done' ? 'line-through text-gray-400' : ''" x-text="t.title"></p>
+                <p class="text-xs text-gray-400 mt-0.5">
+                  <span x-text="t.matters ? t.matters.matter_number + ' · ' : ''"></span>
+                  <span x-text="t.due_at ? (isOverdue(t) ? 'Overdue: ' : 'Due: ') + window.formatDateTime(t.due_at) : 'No due date'"></span>
+                </p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs capitalize px-2 py-0.5 rounded-full"
+                  :class="t.priority === 'urgent' ? 'bg-red-100 text-red-700' : t.priority === 'high' ? 'bg-orange-100 text-orange-700' : t.priority === 'low' ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-700'"
+                  x-text="t.priority"></span>
+                <select class="text-xs rounded border border-gray-200 px-1.5 py-0.5 bg-white focus:outline-none" x-model="t.status" @change="updateStatus(t)">
+                  <option value="todo">To do</option>
+                  <option value="in_progress">In progress</option>
+                  <option value="done">Done</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+          </template>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+function tasksPage() {
+  return {
+    tasks: [], matters: [], loading: true,
+    statusFilter: 'all',
+    showNew: false, saving: false,
+    form: { title: '', matter_id: '', priority: 'normal', due_at: '', description: '' },
+    tenantId: '',
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      this.tenantId = user.user_metadata.tenant_id;
+      lucide.createIcons();
+      if (window.location.hash === '#new') this.showNew = true;
+      const { data: ml } = await window.sb.from('matters').select('id, matter_number, title').order('matter_number');
+      this.matters = ml || [];
+      await this.load();
+    },
+
+    async load() {
+      this.loading = true;
+      let q = window.sb.from('tasks').select('*, matters(matter_number)').order('due_at', { ascending: true, nullsFirst: false });
+      if (this.statusFilter === 'overdue') {
+        q = q.not('status', 'in', '("done","cancelled")').lt('due_at', new Date().toISOString());
+      } else if (this.statusFilter !== 'all') {
+        q = q.eq('status', this.statusFilter);
+      }
+      const { data } = await q.limit(100);
+      this.tasks = data || [];
+      this.loading = false;
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    isOverdue(t) {
+      return t.status !== 'done' && t.status !== 'cancelled' && t.due_at && new Date(t.due_at) < new Date();
+    },
+
+    async save() {
+      this.saving = true;
+      const { error } = await window.sb.from('tasks').insert({
+        tenant_id: this.tenantId,
+        title: this.form.title,
+        matter_id: this.form.matter_id || null,
+        priority: this.form.priority,
+        due_at: this.form.due_at || null,
+        description: this.form.description || null,
+        status: 'todo',
+      });
+      this.saving = false;
+      if (error) { window.toast(error.message, 'error'); return; }
+      window.toast('Task created');
+      this.showNew = false;
+      this.form = { title: '', matter_id: '', priority: 'normal', due_at: '', description: '' };
+      await this.load();
+    },
+
+    async toggleTask(t) {
+      const newStatus = t.status === 'done' ? 'todo' : 'done';
+      await window.sb.from('tasks').update({ status: newStatus, completed_at: newStatus === 'done' ? new Date().toISOString() : null }).eq('id', t.id);
+      t.status = newStatus;
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    async updateStatus(t) {
+      await window.sb.from('tasks').update({ status: t.status, completed_at: t.status === 'done' ? new Date().toISOString() : null }).eq('id', t.id);
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

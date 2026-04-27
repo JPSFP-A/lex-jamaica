@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoices — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="invoicesPage()" x-init="init()">
+      <div class="max-w-6xl mx-auto space-y-5">
+
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-gray-900">Invoices</h1>
+          <button @click="showNew = true" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg">
+            <i data-lucide="plus" class="h-4 w-4"></i>New Invoice
+          </button>
+        </div>
+
+        <!-- Status filters -->
+        <div class="flex gap-2 flex-wrap">
+          <template x-for="s in ['','draft','issued','paid','overdue','void']" :key="s">
+            <button @click="statusFilter = s; load()"
+              :class="statusFilter === s ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+              class="px-3 py-1.5 rounded-lg border text-sm font-medium capitalize transition-colors"
+              x-text="s || 'All'"></button>
+          </template>
+        </div>
+
+        <!-- New invoice form -->
+        <div x-show="showNew" x-cloak class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+          <h2 class="font-semibold text-gray-900">New Invoice</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Client *</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.client_id">
+                <option value="">Select client…</option>
+                <template x-for="c in clients" :key="c.id"><option :value="c.id" x-text="c.display_name"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Matter</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.matter_id" @change="loadUnbilled()">
+                <option value="">No matter</option>
+                <template x-for="m in matters" :key="m.id"><option :value="m.id" x-text="m.matter_number + ' — ' + m.title"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Due date</label>
+              <input type="date" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.due_at" />
+            </div>
+            <div class="flex items-end pb-1 gap-2">
+              <input type="checkbox" id="gct" x-model="form.apply_gct" class="h-4 w-4 text-brand-600 rounded" />
+              <label for="gct" class="text-sm text-gray-700">Apply 15% GCT</label>
+            </div>
+          </div>
+
+          <!-- Unbilled time entries -->
+          <div x-show="unbilledEntries.length > 0">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Add unbilled time entries</label>
+            <div class="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-48 overflow-y-auto">
+              <template x-for="e in unbilledEntries" :key="e.id">
+                <label class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" :value="e.id" x-model="selectedEntries" class="h-4 w-4 text-brand-600 rounded" />
+                  <div class="flex-1 text-sm">
+                    <p class="text-gray-900" x-text="e.description"></p>
+                    <p class="text-gray-400" x-text="window.formatDate(e.entry_date) + ' · ' + Math.floor(e.duration_minutes/60) + 'h ' + (e.duration_minutes%60) + 'm · ' + window.formatCurrency((e.duration_minutes/60)*e.hourly_rate)"></p>
+                  </div>
+                </label>
+              </template>
+            </div>
+            <div x-show="selectedEntries.length > 0" class="mt-2 text-sm text-gray-700">
+              Subtotal: <strong x-text="window.formatCurrency(selectedSubtotal)"></strong>
+              <template x-if="form.apply_gct">
+                <span> + GCT: <strong x-text="window.formatCurrency(selectedSubtotal * 0.15)"></strong> = <strong x-text="window.formatCurrency(selectedSubtotal * 1.15)"></strong></span>
+              </template>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button @click="save()" :disabled="saving || !form.client_id" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+              <span x-show="saving" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+              <span x-text="saving ? 'Creating…' : 'Create Draft Invoice'"></span>
+            </button>
+            <button @click="showNew = false" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Invoice table -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Number</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Matter</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <template x-if="loading"><tr><td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400">Loading…</td></tr></template>
+              <template x-if="!loading && invoices.length === 0"><tr><td colspan="7" class="px-5 py-10 text-center text-sm text-gray-500">No invoices found.</td></tr></template>
+              <template x-for="inv in invoices" :key="inv.id">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3">
+                    <a :href="'/invoice.html?id=' + inv.id" class="text-sm font-medium text-brand-600 hover:underline" x-text="inv.invoice_number"></a>
+                  </td>
+                  <td class="px-5 py-3 text-sm text-gray-700" x-text="inv.clients?.display_name || '—'"></td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="inv.matters?.matter_number || '—'"></td>
+                  <td class="px-5 py-3 text-sm font-medium text-gray-900" x-text="window.formatCurrency(inv.total)"></td>
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      :class="statusColor(inv.status)" x-text="inv.status"></span>
+                  </td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="inv.due_at ? window.formatDate(inv.due_at) : '—'"></td>
+                  <td class="px-5 py-3">
+                    <div class="flex gap-2">
+                      <button x-show="inv.status === 'draft'" @click="transition(inv, 'issue')" class="text-xs text-blue-600 hover:underline">Issue</button>
+                      <button x-show="['issued','overdue'].includes(inv.status)" @click="transition(inv, 'mark_paid')" class="text-xs text-green-600 hover:underline">Mark Paid</button>
+                      <button x-show="!['paid','void'].includes(inv.status)" @click="voidInv(inv)" class="text-xs text-red-500 hover:underline">Void</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+const STATUS_COLORS = { draft:'bg-yellow-100 text-yellow-700', issued:'bg-blue-100 text-blue-700', paid:'bg-green-100 text-green-700', overdue:'bg-red-100 text-red-700', void:'bg-gray-100 text-gray-500' };
+
+function invoicesPage() {
+  return {
+    invoices: [], clients: [], matters: [], unbilledEntries: [], selectedEntries: [],
+    loading: true, statusFilter: '', showNew: false, saving: false,
+    form: { client_id: '', matter_id: '', apply_gct: true, due_at: '' },
+    tenantId: '',
+
+    get selectedSubtotal() {
+      return this.unbilledEntries.filter(e => this.selectedEntries.includes(e.id))
+        .reduce((s, e) => s + (e.duration_minutes / 60) * Number(e.hourly_rate), 0);
+    },
+
+    statusColor(s) { return STATUS_COLORS[s] || 'bg-gray-100 text-gray-600'; },
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      this.tenantId = user.user_metadata.tenant_id;
+      lucide.createIcons();
+      const [{ data: cl }, { data: ml }] = await Promise.all([
+        window.sb.from('clients').select('id, display_name').order('display_name'),
+        window.sb.from('matters').select('id, matter_number, title').order('matter_number'),
+      ]);
+      this.clients = cl || [];
+      this.matters = ml || [];
+      await this.load();
+    },
+
+    async load() {
+      this.loading = true;
+      let q = window.sb.from('invoices').select('*, clients(display_name), matters(matter_number)').order('created_at', { ascending: false });
+      if (this.statusFilter) q = q.eq('status', this.statusFilter);
+      const { data } = await q.limit(100);
+      this.invoices = data || [];
+      this.loading = false;
+    },
+
+    async loadUnbilled() {
+      if (!this.form.matter_id) { this.unbilledEntries = []; return; }
+      const { data } = await window.sb.from('time_entries').select('*').eq('matter_id', this.form.matter_id).is('invoice_id', null).eq('billable', true);
+      this.unbilledEntries = data || [];
+      this.selectedEntries = [];
+    },
+
+    async save() {
+      this.saving = true;
+      const { data, error } = await window.sb.rpc('create_invoice', {
+        p_client_id: this.form.client_id,
+        p_matter_id: this.form.matter_id || null,
+        p_apply_gct: this.form.apply_gct,
+        p_due_at: this.form.due_at || null,
+        p_time_entry_ids: this.selectedEntries.length ? this.selectedEntries : null,
+      });
+      this.saving = false;
+      if (error) { window.toast(error.message, 'error'); return; }
+      window.toast('Invoice created');
+      this.showNew = false;
+      this.form = { client_id: '', matter_id: '', apply_gct: true, due_at: '' };
+      this.selectedEntries = []; this.unbilledEntries = [];
+      await this.load();
+    },
+
+    async transition(inv, action) {
+      const { error } = await window.sb.rpc('transition_invoice', { p_invoice_id: inv.id, p_action: action });
+      if (error) { window.toast(error.message, 'error'); return; }
+      window.toast(action === 'issue' ? 'Invoice issued' : 'Marked as paid');
+      await this.load();
+    },
+
+    async voidInv(inv) {
+      if (!confirm('Void this invoice? Time entries will be released to unbilled.')) return;
+      const { error } = await window.sb.rpc('transition_invoice', { p_invoice_id: inv.id, p_action: 'void' });
+      if (error) { window.toast(error.message, 'error'); return; }
+      window.toast('Invoice voided');
+      await this.load();
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

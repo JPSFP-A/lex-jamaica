@@ -1,0 +1,8 @@
+{
+  "name": "@legal/database",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "schema": "echo Review schema.sql"
+  }
+}

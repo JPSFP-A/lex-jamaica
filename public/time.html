@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="timePage()" x-init="init()">
+      <div class="max-w-4xl mx-auto space-y-5">
+
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-gray-900">Time &amp; Billing</h1>
+          <button @click="showNew = true" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg">
+            <i data-lucide="plus" class="h-4 w-4"></i>Log Time
+          </button>
+        </div>
+
+        <!-- WIP summary -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500">Total WIP (unbilled)</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="window.formatCurrency(wipTotal)"></p>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500">Hours this month</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="(monthMinutes / 60).toFixed(1) + 'h'"></p>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500">Unbilled entries</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="entries.filter(e => !e.invoice_id).length"></p>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex gap-3 flex-wrap">
+          <select class="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:border-brand-500 outline-none" x-model="matterFilter" @change="load()">
+            <option value="">All matters</option>
+            <template x-for="m in matters" :key="m.id"><option :value="m.id" x-text="m.matter_number + ' — ' + m.title"></option></template>
+          </select>
+          <select class="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:border-brand-500 outline-none" x-model="billedFilter" @change="load()">
+            <option value="">All entries</option>
+            <option value="unbilled">Unbilled only</option>
+            <option value="billed">Billed only</option>
+          </select>
+        </div>
+
+        <!-- New entry form -->
+        <div x-show="showNew" x-cloak class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+          <h2 class="font-semibold text-gray-900">Log Time</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Matter *</label>
+              <select class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.matter_id">
+                <option value="">Select matter…</option>
+                <template x-for="m in matters" :key="m.id"><option :value="m.id" x-text="m.matter_number + ' — ' + m.title"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+              <input type="date" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.entry_date" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Duration (hours) *</label>
+              <input type="number" min="0.1" step="0.1" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.hours" placeholder="1.5" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Hourly rate (JMD) *</label>
+              <input type="number" min="0" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.hourly_rate" placeholder="15000" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+              <input class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 outline-none" x-model="form.description" placeholder="e.g. Drafting statement of claim" />
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="billable" x-model="form.billable" class="h-4 w-4 text-brand-600 rounded" />
+              <label for="billable" class="text-sm text-gray-700">Billable</label>
+            </div>
+            <div class="text-right text-sm text-gray-600 self-end">
+              Line value: <strong x-text="window.formatCurrency((parseFloat(form.hours)||0) * (parseFloat(form.hourly_rate)||0))"></strong>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button @click="save()" :disabled="saving || !form.matter_id || !form.description || !form.hours" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+              <span x-show="saving" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+              <span x-text="saving ? 'Saving…' : 'Save Entry'"></span>
+            </button>
+            <button @click="showNew = false" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Entries table -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Matter</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <template x-if="loading"><tr><td colspan="6" class="px-5 py-10 text-center text-sm text-gray-400">Loading…</td></tr></template>
+              <template x-if="!loading && entries.length === 0"><tr><td colspan="6" class="px-5 py-10 text-center text-sm text-gray-500">No time entries found.</td></tr></template>
+              <template x-for="e in entries" :key="e.id">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3 text-sm text-gray-900" x-text="e.description"></td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="e.matters?.matter_number || '—'"></td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="window.formatDate(e.entry_date)"></td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="Math.floor(e.duration_minutes/60) + 'h ' + (e.duration_minutes%60) + 'm'"></td>
+                  <td class="px-5 py-3 text-sm font-medium text-gray-900" x-text="window.formatCurrency((e.duration_minutes/60)*e.hourly_rate)"></td>
+                  <td class="px-5 py-3">
+                    <span x-show="!e.invoice_id" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700">Unbilled</span>
+                    <span x-show="e.invoice_id" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700">Billed</span>
+                    <span x-show="!e.billable" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 ml-1">Non-billable</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+function timePage() {
+  return {
+    entries: [], matters: [], loading: true,
+    matterFilter: '', billedFilter: '',
+    showNew: false, saving: false,
+    form: { matter_id: '', entry_date: new Date().toISOString().slice(0,10), hours: '', hourly_rate: '', description: '', billable: true },
+    tenantId: '', userId: '',
+    wipTotal: 0, monthMinutes: 0,
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      this.tenantId = user.user_metadata.tenant_id;
+      this.userId   = user.user_metadata.user_id;
+      lucide.createIcons();
+      if (window.location.hash.startsWith('#new')) {
+        this.showNew = true;
+        const params = new URLSearchParams(location.search);
+        if (params.get('matterId')) this.form.matter_id = params.get('matterId');
+      }
+      const { data: ml } = await window.sb.from('matters').select('id, matter_number, title').order('matter_number');
+      this.matters = ml || [];
+      await this.load();
+    },
+
+    async load() {
+      this.loading = true;
+      let q = window.sb.from('time_entries').select('*, matters(matter_number)').order('entry_date', { ascending: false });
+      if (this.matterFilter) q = q.eq('matter_id', this.matterFilter);
+      if (this.billedFilter === 'unbilled') q = q.is('invoice_id', null);
+      if (this.billedFilter === 'billed')   q = q.not('invoice_id', 'is', null);
+      const { data } = await q.limit(100);
+      this.entries = data || [];
+
+      // WIP total (unbilled billable)
+      this.wipTotal = this.entries.filter(e => !e.invoice_id && e.billable)
+        .reduce((s, e) => s + (e.duration_minutes / 60) * Number(e.hourly_rate), 0);
+
+      // Hours this calendar month
+      const now = new Date();
+      this.monthMinutes = this.entries
+        .filter(e => { const d = new Date(e.entry_date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+        .reduce((s, e) => s + e.duration_minutes, 0);
+
+      this.loading = false;
+    },
+
+    async save() {
+      this.saving = true;
+      const mins = Math.round((parseFloat(this.form.hours) || 0) * 60);
+      const { error } = await window.sb.from('time_entries').insert({
+        tenant_id:       this.tenantId,
+        user_id:         this.userId,
+        matter_id:       this.form.matter_id,
+        entry_date:      this.form.entry_date,
+        duration_minutes: mins,
+        hourly_rate:     parseFloat(this.form.hourly_rate),
+        description:     this.form.description,
+        billable:        this.form.billable,
+      });
+      this.saving = false;
+      if (error) { window.toast(error.message, 'error'); return; }
+      window.toast('Time entry saved');
+      this.showNew = false;
+      this.form = { matter_id: '', entry_date: new Date().toISOString().slice(0,10), hours: '', hourly_rate: '', description: '', billable: true };
+      await this.load();
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

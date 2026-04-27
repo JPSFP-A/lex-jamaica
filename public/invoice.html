@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice — LexJamaica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } } } } }</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-container" class="hidden lg:flex w-56 shrink-0 flex-col"></div>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-800 text-white">
+      <i data-lucide="scale" class="h-5 w-5"></i><span class="font-bold">LexJamaica</span>
+    </div>
+    <main class="flex-1 overflow-y-auto p-6" x-data="invoicePage()" x-init="init()">
+      <div class="max-w-2xl mx-auto space-y-6">
+
+        <div class="flex items-center gap-3">
+          <a href="/invoices.html" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">
+            <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i>Invoices
+          </a>
+          <h1 class="text-2xl font-bold text-gray-900" x-text="inv.invoice_number || '…'"></h1>
+          <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+            :class="statusColor(inv.status)" x-text="inv.status"></span>
+        </div>
+
+        <template x-if="inv.id">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+            <!-- Meta -->
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-xs text-gray-500">Client</p>
+                <p class="font-medium text-gray-900" x-text="inv.clients?.display_name || '—'"></p>
+              </div>
+              <div x-show="inv.matter_id">
+                <p class="text-xs text-gray-500">Matter</p>
+                <a :href="'/matter.html?id=' + inv.matter_id" class="font-medium text-brand-600 hover:underline" x-text="inv.matters?.matter_number"></a>
+              </div>
+              <div x-show="inv.issued_at">
+                <p class="text-xs text-gray-500">Issued</p>
+                <p class="font-medium text-gray-900" x-text="window.formatDate(inv.issued_at)"></p>
+              </div>
+              <div x-show="inv.due_at">
+                <p class="text-xs text-gray-500">Due</p>
+                <p class="font-medium text-gray-900" x-text="window.formatDate(inv.due_at)"></p>
+              </div>
+            </div>
+
+            <!-- Totals -->
+            <div class="border-t border-gray-200 pt-4 space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Subtotal</span>
+                <span class="font-medium" x-text="window.formatCurrency(inv.subtotal)"></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">GCT (15%)</span>
+                <span class="font-medium" x-text="window.formatCurrency(inv.tax_amount)"></span>
+              </div>
+              <div class="flex justify-between text-base font-bold border-t border-gray-200 pt-2">
+                <span>Total (JMD)</span>
+                <span x-text="window.formatCurrency(inv.total)"></span>
+              </div>
+            </div>
+
+            <!-- Time entries on this invoice -->
+            <div x-show="lineItems.length > 0" class="border-t border-gray-200 pt-4">
+              <h3 class="text-sm font-medium text-gray-700 mb-2">Time entries included</h3>
+              <div class="divide-y divide-gray-100 text-sm">
+                <template x-for="e in lineItems" :key="e.id">
+                  <div class="flex justify-between py-2">
+                    <div>
+                      <p class="text-gray-900" x-text="e.description"></p>
+                      <p class="text-xs text-gray-400" x-text="window.formatDate(e.entry_date) + ' · ' + Math.floor(e.duration_minutes/60) + 'h ' + (e.duration_minutes%60) + 'm @ ' + window.formatCurrency(e.hourly_rate) + '/hr'"></p>
+                    </div>
+                    <span class="font-medium text-gray-900" x-text="window.formatCurrency((e.duration_minutes/60)*e.hourly_rate)"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2 pt-2">
+              <button x-show="inv.status === 'draft'" @click="transition('issue')" :disabled="acting" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+                <span x-text="acting ? 'Issuing…' : 'Issue Invoice'"></span>
+              </button>
+              <button x-show="['issued','overdue'].includes(inv.status)" @click="transition('mark_paid')" :disabled="acting" class="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+                <span x-text="acting ? 'Updating…' : 'Mark as Paid'"></span>
+              </button>
+              <button x-show="!['paid','void'].includes(inv.status)" @click="voidInv()" :disabled="acting" class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">Void</button>
+            </div>
+          </div>
+        </template>
+
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+<script>
+const STATUS_COLORS = { draft:'bg-yellow-100 text-yellow-700', issued:'bg-blue-100 text-blue-700', paid:'bg-green-100 text-green-700', overdue:'bg-red-100 text-red-700', void:'bg-gray-100 text-gray-500' };
+
+function invoicePage() {
+  return {
+    invoiceId: new URLSearchParams(location.search).get('id'),
+    inv: {}, lineItems: [], acting: false,
+
+    statusColor(s) { return STATUS_COLORS[s] || 'bg-gray-100 text-gray-600'; },
+
+    async init() {
+      const user = await window.requireAuth();
+      if (!user) return;
+      lucide.createIcons();
+      if (!this.invoiceId) { window.location.href = '/invoices.html'; return; }
+      await this.load();
+    },
+
+    async load() {
+      const { data } = await window.sb.from('invoices')
+        .select('*, clients(display_name), matters(matter_number)')
+        .eq('id', this.invoiceId).single();
+      this.inv = data || {};
+      if (data) {
+        document.title = data.invoice_number + ' — LexJamaica';
+        const { data: lines } = await window.sb.from('time_entries').select('*').eq('invoice_id', this.invoiceId);
+        this.lineItems = lines || [];
+      }
+    },
+
+    async transition(action) {
+      this.acting = true;
+      const { error } = await window.sb.rpc('transition_invoice', { p_invoice_id: this.invoiceId, p_action: action });
+      this.acting = false;
+      if (error) { window.toast(error.message, 'error'); return; }
+      window.toast(action === 'issue' ? 'Invoice issued' : 'Marked as paid');
+      await this.load();
+    },
+
+    async voidInv() {
+      if (!confirm('Void this invoice? Time entries will be released to unbilled.')) return;
+      this.acting = true;
+      const { error } = await window.sb.rpc('transition_invoice', { p_invoice_id: this.invoiceId, p_action: 'void' });
+      this.acting = false;
+      if (error) { window.toast(error.message, 'error'); return; }
+      window.toast('Invoice voided');
+      await this.load();
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

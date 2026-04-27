@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+build
+.env
+.env.local
+*.log
+.DS_Store
+coverage
+prisma/dev.db
+supabase/.branches
+supabase/.temp
