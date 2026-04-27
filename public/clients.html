@@ -149,11 +149,13 @@ function clientsPage() {
     clients: [], loading: true,
     search: '', typeFilter: '',
     showNew: false, saving: false, formError: '',
+    tenantId: '',
     form: { client_type: 'individual', display_name: '', email: '', phone: '', parish: '', risk_rating: 'standard', tax_registration_number: '' },
 
     async init() {
       const user = await window.requireAuth();
       if (!user) return;
+      this.tenantId = user.user_metadata.tenant_id;
       lucide.createIcons();
       if (window.location.hash === '#new') this.showNew = true;
       await this.load();
@@ -175,7 +177,7 @@ function clientsPage() {
       this.saving = true;
       const { error } = await window.sb.from('clients').insert({
         ...this.form,
-        tenant_id: (await window.sb.auth.getUser()).data.user.user_metadata.tenant_id,
+        tenant_id: this.tenantId,
       });
       this.saving = false;
       if (error) { this.formError = error.message; return; }

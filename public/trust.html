@@ -148,7 +148,7 @@
                     :class="txTypeColor(tx.transaction_type)" x-text="tx.transaction_type"></span>
                   <div>
                     <p class="text-sm font-medium text-gray-900" x-text="tx.description"></p>
-                    <p class="text-xs text-gray-400" x-text="window.formatDate(tx.transaction_date) + (tx.matters ? ' · ' + tx.matters.matter_number : '') + (tx.users ? ' · ' + tx.users.full_name : '')"></p>
+                    <p class="text-xs text-gray-400" x-text="window.formatDate(tx.transaction_date) + (tx.matters ? ' · ' + tx.matters.matter_number : '') + (tx.profiles ? ' · ' + tx.profiles.full_name : '')"></p>
                   </div>
                 </div>
                 <div class="text-right shrink-0 ml-4">
@@ -226,7 +226,7 @@ function trustPage() {
 
     async loadTx() {
       let q = window.sb.from('trust_transactions')
-        .select('*, matters(matter_number), users!trust_transactions_created_by_user_id_fkey(full_name)')
+        .select('*, matters(matter_number), profiles!trust_transactions_created_by_user_id_fkey(full_name)')
         .order('created_at', { ascending: false });
       if (this.selectedAccountId) q = q.eq('trust_account_id', this.selectedAccountId);
       if (this.txFilter) q = q.eq('approval_status', this.txFilter);

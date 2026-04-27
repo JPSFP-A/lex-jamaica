@@ -90,7 +90,7 @@
                     </div>
                   </td>
                   <td class="px-5 py-3 text-sm text-gray-500" x-text="doc.matters?.matter_number || '—'"></td>
-                  <td class="px-5 py-3 text-sm text-gray-500" x-text="doc.users?.full_name || '—'"></td>
+                  <td class="px-5 py-3 text-sm text-gray-500" x-text="doc.profiles?.full_name || '—'"></td>
                   <td class="px-5 py-3 text-sm text-gray-400" x-text="fileSize(doc.file_size_bytes)"></td>
                   <td class="px-5 py-3 text-sm text-gray-400" x-text="window.formatDate(doc.created_at)"></td>
                   <td class="px-5 py-3">
@@ -148,7 +148,7 @@ function documentsPage() {
       if (!user) return;
       const meta = user.user_metadata || {};
       this.tenantId = meta.tenant_id;
-      this.userId   = meta.user_id;
+      this.userId   = user.id;
       lucide.createIcons();
       const { data: ml } = await window.sb.from('matters').select('id, matter_number, title').order('matter_number');
       this.matters = ml || [];
@@ -158,7 +158,7 @@ function documentsPage() {
     async load() {
       this.loading = true;
       let q = window.sb.from('documents')
-        .select('*, matters(matter_number), users!documents_uploaded_by_user_id_fkey(full_name)')
+        .select('*, matters(matter_number), profiles!documents_uploaded_by_user_id_fkey(full_name)')
         .order('created_at', { ascending: false });
       if (this.matterFilter) q = q.eq('matter_id', this.matterFilter);
       const { data } = await q.limit(200);
