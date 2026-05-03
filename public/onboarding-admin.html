@@ -352,18 +352,26 @@ function adminApp() {
     },
 
     get filesGrouped() {
+      var tmpl = this.activeCompany ? (this.activeCompany.template || 'general') : 'general';
+      var secs = SECTION_TEMPLATES[tmpl] || SECTION_TEMPLATES.general;
       const groups = {};
-      SECTIONS.forEach(function(s) {
+      secs.forEach(function(s) {
         s.items.forEach(function(i) {
           groups[i.id] = { itemId: i.id, itemTitle: i.title, sectionTitle: s.title, sectionId: s.id, files: [] };
         });
       });
+      // Also bucket any files whose item_id isn't in the template (catch-all)
       this.filesList.forEach(function(f) {
-        if (groups[f.item_id]) groups[f.item_id].files.push(f);
+        if (groups[f.item_id]) {
+          groups[f.item_id].files.push(f);
+        } else {
+          if (!groups['__other__']) groups['__other__'] = { itemId: '__other__', itemTitle: 'Other', sectionTitle: 'Other', sectionId: '__other__', files: [] };
+          groups['__other__'].files.push(f);
+        }
       });
       var result = [];
       var lastSection = null;
-      SECTIONS.forEach(function(s) {
+      secs.forEach(function(s) {
         s.items.forEach(function(i) {
           var g = groups[i.id];
           if (!g || g.files.length === 0) return;
@@ -372,6 +380,10 @@ function adminApp() {
           result.push(Object.assign({}, g));
         });
       });
+      if (groups['__other__'] && groups['__other__'].files.length > 0) {
+        groups['__other__'].isFirstInSection = true;
+        result.push(Object.assign({}, groups['__other__']));
+      }
       return result;
     },
 
@@ -398,7 +410,8 @@ function adminApp() {
       this.activeCompany = c;
       const overrides = c.checklist_overrides || {};
       this.customizeItems = [];
-      SECTIONS.forEach(function(s) {
+      var secs = SECTION_TEMPLATES[c.template || 'general'] || SECTION_TEMPLATES.general;
+      secs.forEach(function(s) {
         s.items.forEach(function(item, idx) {
           this.customizeItems.push({
             id: item.id,
