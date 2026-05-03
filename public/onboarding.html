@@ -81,6 +81,12 @@
           <i :data-lucide="isConsultant ? 'shield-check' : 'shield'" class="h-3.5 w-3.5"></i>
           <span x-text="isConsultant ? 'Consultant' : 'Client View'"></span>
         </button>
+        <!-- View Proposal -->
+        <a x-show="proposalUrl" :href="proposalUrl" target="_blank" rel="noopener"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gold-500 text-navy-900 hover:bg-gold-400 transition-colors">
+          <i data-lucide="file-text" class="h-3.5 w-3.5"></i>
+          <span>Proposal</span>
+        </a>
         <!-- Back to Admin (admin viewing mode) -->
         <button x-show="isAdminViewing" @click="backToAdmin()"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500 text-white hover:bg-amber-400 transition-colors">
@@ -406,6 +412,7 @@ function portalApp() {
     uploads:   {},
     clientId: '',
     companyName: '',
+    proposalUrl: '',
     isConsultant: false,
     isAdminViewing: false,
     showPin: false,
@@ -450,22 +457,24 @@ function portalApp() {
 
     async loadSections() {
       const { data } = await sb.from('onboarding_clients')
-        .select('checklist_overrides')
+        .select('checklist_overrides, template, proposal_url')
         .eq('id', this.clientId)
         .single();
-      const ov = data?.checklist_overrides || {};
-      this.sections = SECTIONS
-        .map(s => ({
-          ...s,
-          items: s.items
-            .filter(i => !ov[i.id]?.hidden)
-            .map(i => ({
-              ...i,
-              showComments: false,
-              title:       ov[i.id]?.title       ?? i.title,
-              description: ov[i.id]?.description ?? i.description,
-            }))
-        }));
+      const ov       = data?.checklist_overrides || {};
+      const template = data?.template || 'general';
+      this.proposalUrl = data?.proposal_url || '';
+      const base = SECTION_TEMPLATES[template] || SECTION_TEMPLATES.general;
+      this.sections = base.map(s => ({
+        ...s,
+        items: s.items
+          .filter(i => !ov[i.id]?.hidden)
+          .map(i => ({
+            ...i,
+            showComments: false,
+            title:       ov[i.id]?.title       ?? i.title,
+            description: ov[i.id]?.description ?? i.description,
+          }))
+      }));
     },
 
     async loadResponses() {

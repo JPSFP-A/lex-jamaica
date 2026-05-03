@@ -55,9 +55,17 @@
         <h2 class="font-semibold text-gray-900 mb-4">Add New Company</h2>
         <div class="flex gap-3 flex-wrap">
           <input x-model="newName" type="text" placeholder="Company name"
-            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            class="flex-1 min-w-[180px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
           <input x-model="newCode" type="text" placeholder="Access code"
-            class="w-40 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            class="w-36 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          <select x-model="newTemplate"
+            class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none bg-white">
+            <option value="general">General</option>
+            <option value="law_firm">Law Firm</option>
+            <option value="construction_rental">Construction &amp; Rental</option>
+          </select>
+          <input x-model="newProposalUrl" type="url" placeholder="Proposal URL (optional)"
+            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
           <button @click="addCompany()" :disabled="!newName || !newCode || adding"
             class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
             <span x-text="adding ? 'Adding...' : '+ Add'"></span>
@@ -80,16 +88,28 @@
             <div class="px-5 py-4">
               <div class="flex items-start justify-between gap-4 flex-wrap">
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 flex-wrap">
                     <p class="text-sm font-semibold text-gray-900" x-text="c.company_name"></p>
+                    <span class="text-xs px-1.5 py-0.5 rounded font-medium"
+                      :class="{
+                        'bg-blue-50 text-blue-700':   c.template === 'law_firm',
+                        'bg-orange-50 text-orange-700': c.template === 'construction_rental',
+                        'bg-gray-100 text-gray-500':  !c.template || c.template === 'general'
+                      }"
+                      x-text="c.template === 'law_firm' ? 'Law Firm' : c.template === 'construction_rental' ? 'Construction & Rental' : 'General'">
+                    </span>
                     <span x-show="!c.is_active" class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">disabled</span>
                   </div>
-                  <p class="text-xs text-gray-400 mt-0.5">Code: <span class="font-mono" x-text="c.access_code"></span></p>
+                  <div class="flex items-center gap-3 mt-0.5 flex-wrap">
+                    <p class="text-xs text-gray-400">Code: <span class="font-mono" x-text="c.access_code"></span></p>
+                    <a x-show="c.proposal_url" :href="c.proposal_url" target="_blank" rel="noopener"
+                      class="text-xs text-gold-600 hover:text-navy-700 font-medium underline">View Proposal ↗</a>
+                  </div>
                   <div class="flex items-center gap-2 mt-2">
                     <div class="w-36 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div class="h-full bg-navy-600 rounded-full transition-all" :style="'width:' + progress(c.id) + '%'"></div>
                     </div>
-                    <span class="text-xs text-gray-500" x-text="(responseCounts[c.id] || 0) + ' / ' + TOTAL_ITEMS + ' complete (' + progress(c.id) + '%)'"></span>
+                    <span class="text-xs text-gray-500" x-text="(responseCounts[c.id] || 0) + ' / ' + totalItems(c) + ' complete (' + progress(c.id, c) + '%)'"></span>
                   </div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap shrink-0">
@@ -233,9 +253,14 @@
 <script>
 const sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON__);
 const ADMIN_PIN = 'ADMIN2025';
-const TOTAL_ITEMS = SECTIONS.reduce(function(acc, s) {
-  return acc + s.items.filter(function(i) { return i.type !== 'info'; }).length;
-}, 0);
+
+function templateItemCount(template) {
+  var secs = SECTION_TEMPLATES[template] || SECTION_TEMPLATES.general;
+  return secs.reduce(function(acc, s) {
+    return acc + s.items.filter(function(i) { return i.type !== 'info'; }).length;
+  }, 0);
+}
+const TOTAL_ITEMS = templateItemCount('general');
 
 const ITEM_MAP = {};
 SECTIONS.forEach(function(s) {
@@ -248,7 +273,7 @@ function adminApp() {
   return {
     authed: false, pin: '', pinError: '',
     companies: [], responseCounts: {},
-    newName: '', newCode: '', adding: false, addError: '',
+    newName: '', newCode: '', newTemplate: 'general', newProposalUrl: '', adding: false, addError: '',
     activeCompany: null,
     filesOpen: false, filesLoading: false, filesList: [],
     customizeOpen: false, customizeSaving: false, customizeItems: [],
@@ -280,20 +305,25 @@ function adminApp() {
       }
     },
 
-    progress(clientId) {
-      return TOTAL_ITEMS > 0 ? Math.round(((this.responseCounts[clientId] || 0) / TOTAL_ITEMS) * 100) : 0;
+    totalItems(c) {
+      return templateItemCount(c.template || 'general');
+    },
+
+    progress(clientId, c) {
+      var total = c ? templateItemCount(c.template || 'general') : TOTAL_ITEMS;
+      return total > 0 ? Math.round(((this.responseCounts[clientId] || 0) / total) * 100) : 0;
     },
 
     async addCompany() {
       this.addError = '';
       if (!this.newName || !this.newCode) return;
       this.adding = true;
-      const { error } = await sb.from('onboarding_clients').insert({
-        company_name: this.newName.trim(), access_code: this.newCode.trim()
-      });
+      const payload = { company_name: this.newName.trim(), access_code: this.newCode.trim(), template: this.newTemplate };
+      if (this.newProposalUrl.trim()) payload.proposal_url = this.newProposalUrl.trim();
+      const { error } = await sb.from('onboarding_clients').insert(payload);
       this.adding = false;
       if (error) { this.addError = error.message; return; }
-      this.newName = ''; this.newCode = '';
+      this.newName = ''; this.newCode = ''; this.newTemplate = 'general'; this.newProposalUrl = '';
       await this.load();
     },
 
