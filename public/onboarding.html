@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grant Law Chambers — QBO Implementation Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 50:'#f0f4ff', 100:'#e0e8f7', 600:'#2d4a8a', 700:'#1e3570', 800:'#152860', 900:'#0d1c47' },
+            gold:  { 300:'#f0d080', 400:'#e8c040', 500:'#c8a030', 600:'#a88020' },
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .section-card { @apply bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-4; }
+    .item-row { transition: background 0.15s; }
+    .item-row:hover { background: #f9fafb; }
+    .complete-glow { box-shadow: inset 3px 0 0 #16a34a; }
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans" x-data="portalApp()" x-init="init()">
+
+  <!-- ══ CONSULTANT PIN MODAL ══ -->
+  <div x-show="showPin" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-80 space-y-5">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 bg-navy-800 rounded-xl mb-3">
+          <i data-lucide="shield" class="h-5 w-5 text-gold-400"></i>
+        </div>
+        <h2 class="text-lg font-bold text-gray-900">Consultant Access</h2>
+        <p class="text-sm text-gray-500 mt-1">Enter your PIN to enable consultant mode</p>
+      </div>
+      <input type="password" x-model="pinInput" @keyup.enter="checkPin()"
+        class="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-center text-lg tracking-widest focus:border-navy-600 focus:ring-1 focus:ring-navy-600 outline-none"
+        placeholder="••••••" maxlength="10" />
+      <div x-show="pinError" class="text-sm text-red-600 text-center" x-text="pinError"></div>
+      <div class="flex gap-2">
+        <button @click="checkPin()" class="flex-1 py-2.5 bg-navy-800 hover:bg-navy-700 text-white text-sm font-semibold rounded-lg">Unlock</button>
+        <button @click="showPin = false; pinInput = ''; pinError = ''" class="flex-1 py-2.5 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HEADER ══ -->
+  <header class="bg-navy-900 text-white sticky top-0 z-40 shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-gold-500 rounded-lg flex items-center justify-center shrink-0">
+          <i data-lucide="scale" class="h-5 w-5 text-navy-900"></i>
+        </div>
+        <div>
+          <p class="text-xs text-navy-100 font-medium uppercase tracking-wider">Grant Law Chambers</p>
+          <h1 class="text-base font-bold leading-tight">QuickBooks Implementation Portal</h1>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Progress pill -->
+        <div class="hidden sm:flex items-center gap-2 bg-navy-800 rounded-full px-3 py-1.5">
+          <div class="w-20 h-1.5 bg-navy-700 rounded-full overflow-hidden">
+            <div class="h-full bg-gold-400 rounded-full transition-all duration-700" :style="'width:' + progressPct + '%'"></div>
+          </div>
+          <span class="text-xs text-gold-300 font-medium" x-text="completedCount + '/' + totalCount"></span>
+        </div>
+        <!-- Consultant toggle -->
+        <button @click="isConsultant ? exitConsultant() : (showPin = true)"
+          :class="isConsultant ? 'bg-gold-500 text-navy-900' : 'bg-navy-800 text-gold-400 hover:bg-navy-700'"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors">
+          <i :data-lucide="isConsultant ? 'shield-check' : 'shield'" class="h-3.5 w-3.5"></i>
+          <span x-text="isConsultant ? 'Consultant' : 'Client View'"></span>
+        </button>
+      </div>
+    </div>
+    <!-- Overall progress bar (full width) -->
+    <div class="h-1 bg-navy-800">
+      <div class="h-full bg-gold-400 transition-all duration-700" :style="'width:' + progressPct + '%'"></div>
+    </div>
+  </header>
+
+  <!-- ══ INTRO ══ -->
+  <div class="max-w-5xl mx-auto px-4 pt-6 pb-2">
+    <div class="bg-white rounded-xl border border-navy-100 shadow-sm p-5 flex gap-4">
+      <div class="shrink-0 w-10 h-10 bg-navy-50 rounded-lg flex items-center justify-center">
+        <i data-lucide="info" class="h-5 w-5 text-navy-700"></i>
+      </div>
+      <div class="text-sm text-gray-700 space-y-1">
+        <p class="font-semibold text-gray-900">How to use this portal</p>
+        <p>Work through each section at your own pace. For each item you can: <strong>enter information</strong> directly, <strong>upload documents</strong>, or <strong>leave a comment</strong> if you have a question or are unsure. Your consultant will review and respond. Items turn green when confirmed complete.</p>
+        <p class="text-gray-400 text-xs mt-2">Progress is saved automatically. You can return to this page at any time.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="max-w-5xl mx-auto px-4 py-4 space-y-3">
+    <template x-for="section in sections" :key="section.id">
+      <div class="section-card">
+        <!-- Section header -->
+        <button @click="section.open = !section.open"
+          class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" :class="'bg-' + section.color + '-100'">
+              <i :data-lucide="section.icon" class="h-4 w-4" :class="'text-' + section.color + '-700'"></i>
+            </div>
+            <div>
+              <h2 class="font-semibold text-gray-900" x-text="section.title"></h2>
+              <p class="text-xs text-gray-400" x-text="sectionProgress(section)"></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <!-- Mini progress -->
+            <div class="hidden sm:flex items-center gap-1.5">
+              <template x-for="item in section.items" :key="item.id">
+                <div class="w-2 h-2 rounded-full transition-colors" :class="responses[item.id]?.is_complete ? 'bg-green-500' : 'bg-gray-200'"></div>
+              </template>
+            </div>
+            <i :data-lucide="section.open ? 'chevron-up' : 'chevron-down'" class="h-4 w-4 text-gray-400"></i>
+          </div>
+        </button>
+
+        <!-- Section items -->
+        <div x-show="section.open" x-collapse>
+          <div class="border-t border-gray-100 divide-y divide-gray-100">
+            <template x-for="item in section.items" :key="item.id">
+              <div class="item-row px-5 py-4 transition-colors"
+                :class="responses[item.id]?.is_complete ? 'complete-glow bg-green-50/50' : ''">
+                <div class="flex gap-4">
+                  <!-- Status dot -->
+                  <div class="shrink-0 mt-0.5">
+                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                      :class="responses[item.id]?.is_complete ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-white'">
+                      <i x-show="responses[item.id]?.is_complete" data-lucide="check" class="h-3 w-3 text-white"></i>
+                    </div>
+                  </div>
+
+                  <!-- Item body -->
+                  <div class="flex-1 min-w-0 space-y-3">
+                    <!-- Title + description -->
+                    <div class="flex items-start justify-between gap-2">
+                      <div>
+                        <p class="text-sm font-semibold text-gray-900" x-text="item.title"></p>
+                        <p class="text-xs text-gray-500 mt-0.5" x-text="item.description"></p>
+                      </div>
+                      <!-- Consultant: Mark complete toggle -->
+                      <div x-show="isConsultant" class="shrink-0">
+                        <button @click="toggleComplete(item.id)"
+                          :class="responses[item.id]?.is_complete ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700'"
+                          class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap">
+                          <i :data-lucide="responses[item.id]?.is_complete ? 'check-circle-2' : 'circle'" class="h-3 w-3"></i>
+                          <span x-text="responses[item.id]?.is_complete ? 'Complete' : 'Mark done'"></span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- QBO Options block -->
+                    <template x-if="item.type === 'qbo-options'">
+                      <div class="space-y-3">
+                        <template x-for="opt in item.options" :key="opt.id">
+                          <label class="flex gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors"
+                            :class="(responses[item.id]?.value || '').includes(opt.id) ? 'border-navy-600 bg-navy-50' : 'border-gray-200 hover:border-gray-300'">
+                            <input type="radio" :name="'opt-' + item.id" :value="opt.id"
+                              :checked="(responses[item.id]?.value || '') === opt.id"
+                              @change="saveResponse(item.id, opt.id)" class="mt-0.5 accent-navy-700" />
+                            <div>
+                              <p class="text-sm font-semibold text-gray-900" x-text="opt.label"></p>
+                              <p class="text-xs text-gray-600 mt-0.5" x-text="opt.description"></p>
+                              <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                <template x-for="tag in opt.tags" :key="tag">
+                                  <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600" x-text="tag"></span>
+                                </template>
+                              </div>
+                            </div>
+                          </label>
+                        </template>
+                      </div>
+                    </template>
+
+                    <!-- Text input -->
+                    <template x-if="item.type === 'text'">
+                      <input type="text" :placeholder="item.placeholder || 'Enter information here…'"
+                        :value="responses[item.id]?.value || ''"
+                        @change="saveResponse(item.id, $event.target.value)"
+                        class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none bg-white" />
+                    </template>
+
+                    <!-- Textarea -->
+                    <template x-if="item.type === 'textarea'">
+                      <textarea rows="3" :placeholder="item.placeholder || 'Enter details here…'"
+                        @change="saveResponse(item.id, $event.target.value)"
+                        class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none resize-none bg-white"
+                        x-text="responses[item.id]?.value || ''"></textarea>
+                    </template>
+
+                    <!-- Number input -->
+                    <template x-if="item.type === 'number'">
+                      <div class="relative max-w-xs">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">J$</span>
+                        <input type="number" min="0" step="0.01" :placeholder="item.placeholder || '0.00'"
+                          :value="responses[item.id]?.value || ''"
+                          @change="saveResponse(item.id, $event.target.value)"
+                          class="block w-full rounded-lg border border-gray-200 pl-8 pr-3 py-2 text-sm focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none bg-white" />
+                      </div>
+                    </template>
+
+                    <!-- Date input -->
+                    <template x-if="item.type === 'date'">
+                      <input type="date" :value="responses[item.id]?.value || ''"
+                        @change="saveResponse(item.id, $event.target.value)"
+                        class="block rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 outline-none bg-white" />
+                    </template>
+
+                    <!-- Select -->
+                    <template x-if="item.type === 'select'">
+                      <select @change="saveResponse(item.id, $event.target.value)"
+                        class="block rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 outline-none bg-white">
+                        <option value="">Select…</option>
+                        <template x-for="opt in item.options" :key="opt">
+                          <option :value="opt" :selected="(responses[item.id]?.value || '') === opt" x-text="opt"></option>
+                        </template>
+                      </select>
+                    </template>
+
+                    <!-- Info only (no input) -->
+                    <template x-if="item.type === 'info'">
+                      <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800" x-html="item.infoHtml || ''"></div>
+                    </template>
+
+                    <!-- Upload zone -->
+                    <template x-if="item.canUpload !== false">
+                      <div>
+                        <input type="file" :id="'file-' + item.id" class="hidden" multiple @change="uploadFiles(item.id, $event)" />
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <label :for="'file-' + item.id"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 cursor-pointer text-xs text-gray-600 transition-colors">
+                            <i data-lucide="upload" class="h-3.5 w-3.5"></i>
+                            Upload document
+                          </label>
+                          <!-- Uploaded files -->
+                          <template x-for="f in (uploads[item.id] || [])" :key="f.id">
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 border border-green-200 text-xs text-green-800">
+                              <i data-lucide="file-check" class="h-3 w-3"></i>
+                              <span x-text="f.file_name" class="max-w-[140px] truncate"></span>
+                              <button @click="deleteUpload(item.id, f)" class="text-green-600 hover:text-red-500 ml-1">
+                                <i data-lucide="x" class="h-3 w-3"></i>
+                              </button>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Comments section -->
+                    <div>
+                      <button @click="item.showComments = !item.showComments"
+                        class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-navy-700 transition-colors mt-1">
+                        <i data-lucide="message-square" class="h-3.5 w-3.5"></i>
+                        <span x-text="(comments[item.id] || []).length > 0 ? ((comments[item.id] || []).length + ' comment' + ((comments[item.id] || []).length > 1 ? 's' : '')) : 'Add comment / question'"></span>
+                        <i :data-lucide="item.showComments ? 'chevron-up' : 'chevron-down'" class="h-3 w-3"></i>
+                      </button>
+
+                      <div x-show="item.showComments" x-cloak class="mt-2 space-y-2">
+                        <!-- Existing comments -->
+                        <div class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
+                          <template x-for="c in (comments[item.id] || [])" :key="c.id">
+                            <div class="flex gap-2">
+                              <div class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5"
+                                :class="c.author_type === 'consultant' ? 'bg-navy-800 text-gold-400' : 'bg-gray-200 text-gray-600'">
+                                <span x-text="c.author_type === 'consultant' ? 'C' : 'G'"></span>
+                              </div>
+                              <div class="flex-1 min-w-0">
+                                <div class="flex items-baseline gap-1.5">
+                                  <span class="text-xs font-semibold" :class="c.author_type === 'consultant' ? 'text-navy-800' : 'text-gray-700'" x-text="c.author_name"></span>
+                                  <span class="text-xs text-gray-400" x-text="formatTime(c.created_at)"></span>
+                                </div>
+                                <p class="text-xs text-gray-700 mt-0.5 whitespace-pre-wrap" x-text="c.message"></p>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                        <!-- New comment input -->
+                        <div class="flex gap-2 items-end">
+                          <textarea rows="2" :x-ref="'comment-' + item.id"
+                            :id="'comment-input-' + item.id"
+                            placeholder="Type your question or comment…"
+                            class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none resize-none"></textarea>
+                          <button @click="addComment(item.id)"
+                            class="shrink-0 px-3 py-2 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                            Send
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Regulatory Calendar -->
+    <div class="section-card">
+      <button @click="calOpen = !calOpen" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+            <i data-lucide="calendar-clock" class="h-4 w-4 text-red-700"></i>
+          </div>
+          <div>
+            <h2 class="font-semibold text-gray-900">Jamaican Regulatory Calendar</h2>
+            <p class="text-xs text-gray-400">Key deadlines your accounting system must support</p>
+          </div>
+        </div>
+        <i :data-lucide="calOpen ? 'chevron-up' : 'chevron-down'" class="h-4 w-4 text-gray-400"></i>
+      </button>
+      <div x-show="calOpen" x-collapse class="border-t border-gray-100">
+        <div class="p-5 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="rounded-xl bg-red-50 border border-red-200 p-4">
+              <p class="text-xs font-bold text-red-700 uppercase tracking-wider mb-3">Monthly — 14th</p>
+              <ul class="space-y-1.5 text-xs text-gray-700">
+                <li class="flex gap-2"><span class="text-red-500 font-bold">→</span> PAYE remittance (TAJ)</li>
+                <li class="flex gap-2"><span class="text-red-500 font-bold">→</span> NIS contributions</li>
+                <li class="flex gap-2"><span class="text-red-500 font-bold">→</span> NHT contributions</li>
+                <li class="flex gap-2"><span class="text-red-500 font-bold">→</span> Education Tax</li>
+                <li class="mt-2 text-red-600 font-medium">⚠ Currently N/A (no employees)</li>
+                <li class="text-gray-500">Framework set up for future hiring</li>
+              </ul>
+            </div>
+            <div class="rounded-xl bg-amber-50 border border-amber-200 p-4">
+              <p class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">Monthly — Last Working Day</p>
+              <ul class="space-y-1.5 text-xs text-gray-700">
+                <li class="flex gap-2"><span class="text-amber-500 font-bold">→</span> GCT return & payment (TAJ e-Tax)</li>
+                <li class="flex gap-2"><span class="text-amber-500 font-bold">→</span> Output GCT collected</li>
+                <li class="flex gap-2"><span class="text-amber-500 font-bold">→</span> Less: Input GCT on expenses</li>
+                <li class="flex gap-2"><span class="text-amber-500 font-bold">→</span> Net payable to TAJ</li>
+                <li class="mt-2 text-amber-700 font-medium">Rate: 15% standard</li>
+              </ul>
+            </div>
+            <div class="rounded-xl bg-blue-50 border border-blue-200 p-4">
+              <p class="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3">Annual</p>
+              <ul class="space-y-1.5 text-xs text-gray-700">
+                <li class="flex gap-2"><span class="text-blue-500 font-bold">→</span> Mar 15 — Corp. tax 1st instalment</li>
+                <li class="flex gap-2"><span class="text-blue-500 font-bold">→</span> Mar 31 — Annual PAYE return</li>
+                <li class="flex gap-2"><span class="text-blue-500 font-bold">→</span> Apr 15 — Income tax return (Dec YE)</li>
+                <li class="flex gap-2"><span class="text-blue-500 font-bold">→</span> Sep 15 — Corp. tax 2nd instalment</li>
+                <li class="flex gap-2"><span class="text-blue-500 font-bold">→</span> GLC Practising Certificate renewal</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom spacer -->
+    <div class="h-8"></div>
+  </main>
+
+  <!-- ══ SAVE INDICATOR ══ -->
+  <div x-show="saving" x-cloak class="fixed bottom-4 right-4 bg-navy-900 text-white text-xs px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+    <span class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span> Saving…
+  </div>
+  <div x-show="saved" x-cloak class="fixed bottom-4 right-4 bg-green-700 text-white text-xs px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+    <i data-lucide="check" class="h-3 w-3"></i> Saved
+  </div>
+
+<script>
+// ── Supabase client (uses same config as main app) ─────────────
+const sb = supabase.createClient(
+  window.__SUPABASE_URL__  || 'https://YOUR_PROJECT.supabase.co',
+  window.__SUPABASE_ANON__ || 'YOUR_ANON_KEY'
+);
+
+// ── Checklist data ─────────────────────────────────────────────
+const SECTIONS = [
+  {
+    id: 'business', title: '1. Business & Legal Structure', icon: 'building-2', color: 'blue', open: true,
+    items: [
+      { id:'trn-firm', title:'Tax Registration Number (TRN)', description:'The firm\'s TRN as issued by Tax Administration Jamaica (TAJ).', type:'text', placeholder:'e.g. 123-456-789', canUpload:false },
+      { id:'gct-cert', title:'GCT Registration Certificate', description:'Upload your GCT registration certificate from TAJ (if registered).', type:'upload', canUpload:true },
+      { id:'gct-status', title:'GCT Registration Status', description:'Are you currently registered for GCT? If so, which scheme?', type:'select', options:['Not yet registered','Standard rate — 15%','Flat rate scheme'], canUpload:false },
+      { id:'biz-name', title:'Business / Trading Name', description:'The full name used on invoices and client correspondence.', type:'text', placeholder:'Grant Law Chambers', canUpload:false },
+      { id:'year-end', title:'Financial Year End Date', description:'The last day of your accounting year (e.g. December 31, March 31).', type:'text', placeholder:'December 31', canUpload:false },
+      { id:'glc-cert', title:'GLC Practising Certificate', description:'Upload your current General Legal Council practising certificate.', type:'upload', canUpload:true },
+      { id:'prof-indemnity', title:'Professional Indemnity Insurance', description:'Policy number, insurer name, annual renewal date, and cover amount.', type:'textarea', placeholder:'Insurer: Guardian Life\nPolicy #: PI-123456\nRenewal: June 30\nCover: J$10,000,000', canUpload:true },
+    ]
+  },
+  {
+    id: 'bank', title: '2. Bank Accounts', icon: 'landmark', color: 'green', open: false,
+    items: [
+      { id:'bank-operating', title:'Operating Account Details', description:'Bank name, branch, and account number for your main business account.', type:'textarea', placeholder:'Bank: NCB Jamaica\nBranch: New Kingston\nAccount #: 123-456-789\nAccount Name: Grant Law Chambers', canUpload:false },
+      { id:'bank-trust', title:'Client Trust Account Details', description:'⚠ This MUST be a separate account solely for client funds. Never mix with operating funds.', type:'textarea', placeholder:'Bank: Scotiabank Jamaica\nBranch: Half Way Tree\nAccount #: 987-654-321\nAccount Name: Grant Law Chambers — Client Trust', canUpload:false },
+      { id:'bank-other', title:'Other Accounts', description:'Any additional savings, investment, or loan accounts.', type:'textarea', placeholder:'e.g. NCB savings account #…', canUpload:false },
+      { id:'bank-statements', title:'Bank Statements — 12 Months (All Accounts)', description:'PDF statements for both operating and trust accounts. Required for opening balance verification.', type:'upload', canUpload:true },
+      { id:'bank-feed', title:'Online Banking — Feed Connection', description:'Can you connect your bank to QBO for automatic transaction imports? Which bank and online portal do you use?', type:'text', placeholder:'Yes — NCB Online Banking', canUpload:false },
+      { id:'loan-details', title:'Loans / Lines of Credit', description:'Outstanding balance, interest rate, monthly payment amount, and lender name for any business loans.', type:'textarea', placeholder:'None currently', canUpload:true },
+    ]
+  },
+  {
+    id: 'contractors', title: '3. Contractors & Service Providers', icon: 'users', color: 'purple', open: false,
+    items: [
+      { id:'contractor-note', title:'Note — Contractor vs. Employee', description:'You currently have no employees. All persons engaged are independent contractors, so PAYE/NIS/NHT/Education Tax are not applicable now. The payroll framework will be configured and ready for when you hire. Contractors are treated as business expenses (Professional Fees / Consulting) not payroll.', type:'info', infoHtml:'<strong>Current Status:</strong> No employees. All workers are independent contractors.<br><br><strong>Tax treatment:</strong> Contractor payments = business expense (no PAYE/NIS/NHT withholding required by the firm).<br><strong>Note:</strong> Contractors are responsible for their own tax filings.<br><br><strong>Future:</strong> QBO payroll module will be configured and ready to activate when your first employee joins.', canUpload:false },
+      { id:'contractor-list', title:'Current Contractors List', description:'Name, type of service, monthly/hourly rate, and TRN if available. Used to set up Vendor records in QBO.', type:'textarea', placeholder:'1. Jane Brown — Paralegal services — J$50,000/month\n2. ABC Couriers — Process serving — as needed\n3. …', canUpload:false },
+      { id:'contractor-agreements', title:'Contractor Agreements', description:'Upload any signed service agreements for your regular contractors.', type:'upload', canUpload:true },
+      { id:'contractor-ytd', title:'Payments Made to Contractors (Current Year)', description:'Total paid to each contractor from start of your financial year to today. Needed for opening balance.', type:'textarea', placeholder:'Jane Brown: J$150,000\nABC Couriers: J$45,000\n…', canUpload:true },
+    ]
+  },
+  {
+    id: 'clients', title: '4. Clients & Work in Progress', icon: 'briefcase', color: 'indigo', open: false,
+    items: [
+      { id:'client-list', title:'Active Client List', description:'All current active clients: name, matter number, practice area, and agreed billing rate or fixed fee.', type:'upload', canUpload:true },
+      { id:'client-ar', title:'Accounts Receivable — Unpaid Invoices', description:'All invoices issued but not yet paid. Include: invoice number, date, client, amount, and age.', type:'upload', canUpload:true },
+      { id:'client-ar-total', title:'Total Outstanding AR (J$)', description:'Grand total of all unpaid invoices as of today.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'client-wip', title:'Work in Progress (Unbilled Time)', description:'Estimate of billable time logged but not yet invoiced, by matter.', type:'textarea', placeholder:'Smith conveyancing: 12 hrs @ J$20,000/hr = J$240,000\nJones litigation: 8 hrs @ J$25,000/hr = J$200,000\n…', canUpload:true },
+      { id:'client-invoices-ytd', title:'All Invoices Issued — Current Financial Year', description:'Complete invoice history for the current year. Needed for GCT return verification and income matching.', type:'upload', canUpload:true },
+      { id:'client-writeoffs', title:'Bad Debts / Write-offs', description:'Any client balances that have been written off or are unlikely to be collected.', type:'textarea', placeholder:'None currently', canUpload:false },
+    ]
+  },
+  {
+    id: 'trust', title: '5. Client Trust Account Records', icon: 'shield-check', color: 'emerald', open: false,
+    items: [
+      { id:'trust-warning', title:'Trust Account — Critical Compliance Note', description:'The trust account reconciliation must balance to zero: bank balance = sum of all client trust balances. Any difference must be explained before QBO setup.', type:'info', infoHtml:'<strong>⚠ Legal requirement:</strong> Client trust funds must be kept strictly separate from firm funds.<br><br>The trust bank balance must equal the sum of all individual client trust ledger balances at all times.<br><br>Misuse of trust funds is a disciplinary matter with the General Legal Council.', canUpload:false },
+      { id:'trust-ledger', title:'Full Trust Ledger — Transaction History', description:'Complete record of all trust account transactions from the start. Can be Excel, PDF, or system export.', type:'upload', canUpload:true },
+      { id:'trust-client-balances', title:'Current Trust Balance Per Client', description:'Amount held in trust for each active client matter as of today.', type:'textarea', placeholder:'Smith (Conveyancing): J$500,000\nJones (Litigation retainer): J$250,000\nDavis (Settlement funds): J$1,200,000\n…\nTOTAL: J$1,950,000', canUpload:true },
+      { id:'trust-bank-balance', title:'Trust Bank Account Balance Today (J$)', description:'Current actual balance per online banking. Must match the total of client balances above.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'trust-disbursements', title:'Disbursements Paid on Behalf of Clients', description:'Any costs you have paid out of trust on behalf of clients that have not yet been billed back (e.g., filing fees, title search fees).', type:'textarea', placeholder:'Smith matter: J$15,000 NLA title search — 12 Jan 2025\n…', canUpload:true },
+    ]
+  },
+  {
+    id: 'expenses', title: '6. Accounts Payable & Expenses', icon: 'receipt', color: 'orange', open: false,
+    items: [
+      { id:'suppliers', title:'Regular Supplier / Vendor List', description:'Names and contact details of all businesses you regularly pay (landlord, utilities, stationery, IT, etc.).', type:'textarea', placeholder:'1. Kingston Properties Ltd — Office rent\n2. JPS — Utilities\n3. Flow Business — Internet/phone\n4. …', canUpload:false },
+      { id:'bills-outstanding', title:'Outstanding Bills Not Yet Paid', description:'Any supplier invoices or bills received but not yet paid. Include: supplier, date, amount, and due date.', type:'upload', canUpload:true },
+      { id:'bills-total', title:'Total Outstanding AP (J$)', description:'Grand total of all unpaid bills as of today.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'rent-lease', title:'Office Lease Agreement', description:'Upload your current office lease. Key details: monthly rent, lease start/end date, deposit held.', type:'upload', canUpload:true },
+      { id:'recurring-costs', title:'Recurring Monthly Costs', description:'List of all regular monthly expenses with amounts.', type:'textarea', placeholder:'Office rent: J$120,000\nInternet/phone: J$15,000\nAntivirus/IT: J$5,000\nBar fees (pro-rated): J$3,000\n…', canUpload:false },
+      { id:'receipts-ytd', title:'Expense Receipts — Current Financial Year', description:'All receipts and invoices for expenses paid. Upload as a ZIP or folder. These are needed for GCT input credit claims.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'fixed-assets', title: '7. Fixed Assets', icon: 'monitor-smartphone', color: 'cyan', open: false,
+    items: [
+      { id:'fa-note', title:'About Fixed Assets', description:'Fixed assets are items with a useful life over 1 year that must be depreciated. For tax purposes Jamaica uses straight-line depreciation. Key rates: Computers 33.3%, Furniture 10–20%, Vehicles 20–25%.', type:'info', infoHtml:'<strong>Depreciation rates (Jamaica straight-line):</strong><br>Computers & IT: 33.3% per year<br>Office furniture: 10–20% per year<br>Motor vehicles: 20–25% per year<br>Leasehold improvements: Over remaining lease term<br>Legal library (physical): 10% per year', canUpload:false },
+      { id:'fa-computers', title:'Computers & IT Equipment', description:'List each item: description, date purchased, purchase price, accumulated depreciation to date.', type:'textarea', placeholder:'MacBook Pro 14" — Jan 2023 — J$280,000\nHP LaserJet Printer — Mar 2022 — J$95,000\nExternal backup drive — J$25,000\n…', canUpload:true },
+      { id:'fa-furniture', title:'Office Furniture & Equipment', description:'Desks, chairs, filing cabinets, reception furniture, etc.', type:'textarea', placeholder:'Executive desk set — 2021 — J$180,000\n3x Client chairs — 2021 — J$60,000\nFiling cabinets x4 — J$40,000\n…', canUpload:true },
+      { id:'fa-vehicles', title:'Motor Vehicles', description:'Any vehicles owned by the firm. Include purchase price, year, make/model.', type:'textarea', placeholder:'None / 2019 Toyota Corolla — J$2,500,000…', canUpload:true },
+      { id:'fa-leaseholds', title:'Leasehold Improvements', description:'Any improvements made to your rented office space (partitions, AC units, fit-out). Depreciated over the remaining lease term.', type:'textarea', placeholder:'Office fit-out 2022 — J$450,000\nAC installation — J$180,000', canUpload:true },
+      { id:'fa-register', title:'Fixed Asset Register (if you have one)', description:'If you already maintain a fixed asset schedule in Excel or other format, upload it here.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'opening-balances', title: '8. Opening Balances & Prior Period', icon: 'file-spreadsheet', color: 'rose', open: false,
+    items: [
+      { id:'ob-financials', title:'Most Recent Financial Statements', description:'Your last set of signed accounts: Profit & Loss and Balance Sheet. These set the starting point for QBO.', type:'upload', canUpload:true },
+      { id:'ob-trial-balance', title:'Trial Balance as of Go-Live Date', description:'If available from your current system or accountant, the trial balance as of the day you start using QBO.', type:'upload', canUpload:true },
+      { id:'ob-go-live', title:'Proposed QBO Go-Live Date', description:'When do you want to start using QBO as your live system?', type:'date', canUpload:false },
+      { id:'ob-gct-history', title:'GCT Filing History', description:'Are all GCT returns filed and paid up to date? Upload last 3 GCT return submissions.', type:'upload', canUpload:true },
+      { id:'ob-gct-status', title:'GCT Compliance Status', description:'Any outstanding GCT liabilities or TAJ correspondence?', type:'select', options:['All filed and paid — fully compliant','Returns filed but some balance outstanding','Some returns not yet filed','Unsure — need to check'], canUpload:true },
+      { id:'ob-tax-assess', title:'Tax Assessments / TAJ Correspondence', description:'Any notices, assessments, or payment plans from TAJ. Upload if applicable.', type:'upload', canUpload:true },
+      { id:'ob-prev-accountant', title:'Previous Accountant / Bookkeeper Details', description:'Contact details for your current or previous accountant so we can request a handover of records.', type:'textarea', placeholder:'Name: John Smith CPA\nFirm: JBS Accounting\nEmail: john@jbsaccounting.com\nPhone: 876-555-0100', canUpload:false },
+    ]
+  },
+  {
+    id: 'qbo-options', title: '9. QBO Setup — Client & Matter Tracking', icon: 'settings-2', color: 'slate', open: false,
+    items: [
+      { id:'qbo-note', title:'Projects vs. Classes — Your Options', description:'QuickBooks Online has different plans. Without the Projects feature, here are the best alternatives for tracking profitability by client and matter.', type:'info', infoHtml:'The standard QBO plans (Simple Start, Essentials, Plus) offer <strong>Sub-customers</strong> and <strong>Class tracking</strong> as the main tools for matter-level reporting. Projects is only available on QBO Advanced.', canUpload:false },
+      {
+        id:'qbo-tracking-method', title:'Choose Your Tracking Method', description:'Select the approach that best fits how you want to report. Your consultant will configure QBO accordingly.',
+        type:'qbo-options', canUpload:false,
+        options: [
+          {
+            id:'subcustomer',
+            label:'Option A — Sub-customer Hierarchy (Recommended for Billing)',
+            description:'Client = Customer in QBO. Each matter = Sub-customer under that client. All invoices, payments and disbursements are linked to the matter. You can run profitability reports by client or by individual matter.',
+            tags:['Best for billing','Works on all QBO plans','Client → Matter drill-down','Invoice tracking per matter']
+          },
+          {
+            id:'class',
+            label:'Option B — Class Tracking (Best for Practice Area Analysis)',
+            description:'Every transaction is tagged with a Class (e.g. Conveyancing, Litigation, Corporate). Run a P&L by Practice Area to see which service lines are most profitable. Simple to set up.',
+            tags:['Practice area P&L','Requires QBO Essentials+','Fast to tag','Good for management reporting']
+          },
+          {
+            id:'both',
+            label:'Option C — Both Sub-customers + Classes (Most Powerful)',
+            description:'Sub-customers track client/matter billing. Classes track practice area. Every transaction gets both. You can slice reports by client, by matter, AND by practice area simultaneously. Slightly more setup but gives the most complete management information.',
+            tags:['Recommended','Full reporting','Client + Practice Area view','Attorney performance tracking']
+          }
+        ]
+      },
+      { id:'qbo-plan', title:'Current QBO Plan', description:'Which QuickBooks Online plan are you on or planning to subscribe to? This determines which features are available.', type:'select', options:['Simple Start','Essentials','Plus','Advanced (includes Projects)','Not yet subscribed — help me choose'], canUpload:false },
+      { id:'qbo-practice-areas', title:'Your Practice Areas', description:'List all practice areas you handle. These will become Classes or Sub-customer categories in QBO.', type:'textarea', placeholder:'Conveyancing\nLitigation\nCorporate\nFamily\nCriminal\nImmigration', canUpload:false },
+      { id:'qbo-attorney-tracking', title:'Track by Responsible Attorney?', description:'Do you want reports that show billing and revenue by attorney/fee earner? (Useful for performance management when the firm grows.)', type:'select', options:['Yes — set up attorney tracking now','No — not needed at this stage'], canUpload:false },
+    ]
+  }
+];
+
+// ── Alpine app ─────────────────────────────────────────────────
+function portalApp() {
+  return {
+    sections: SECTIONS.map(s => ({ ...s, items: s.items.map(i => ({ ...i, showComments: false })) })),
+    responses: {},   // { item_id: { value, is_complete, completed_at } }
+    comments:  {},   // { item_id: [{ id, author_type, author_name, message, created_at }] }
+    uploads:   {},   // { item_id: [{ id, file_name, storage_key }] }
+    isConsultant: false,
+    showPin: false,
+    pinInput: '',
+    pinError: '',
+    saving: false,
+    saved: false,
+    calOpen: false,
+    CONSULTANT_PIN: 'LC2025',  // ← change this to your preferred PIN
+    STORAGE_BUCKET: 'documents',
+
+    get totalCount()     { return this.sections.flatMap(s => s.items.filter(i => i.type !== 'info')).length; },
+    get completedCount() { return Object.values(this.responses).filter(r => r.is_complete).length; },
+    get progressPct()    { return this.totalCount ? Math.round((this.completedCount / this.totalCount) * 100) : 0; },
+
+    sectionProgress(section) {
+      const items = section.items.filter(i => i.type !== 'info');
+      const done  = items.filter(i => this.responses[i.id]?.is_complete).length;
+      return `${done} of ${items.length} items complete`;
+    },
+
+    async init() {
+      this.isConsultant = sessionStorage.getItem('portal_consultant') === this.CONSULTANT_PIN;
+      await Promise.all([this.loadResponses(), this.loadComments(), this.loadUploads()]);
+      lucide.createIcons();
+    },
+
+    async loadResponses() {
+      const { data } = await sb.from('onboarding_responses').select('*');
+      if (data) data.forEach(r => { this.responses[r.item_id] = r; });
+    },
+
+    async loadComments() {
+      const { data } = await sb.from('onboarding_comments').select('*').order('created_at');
+      if (data) {
+        data.forEach(c => {
+          if (!this.comments[c.item_id]) this.comments[c.item_id] = [];
+          this.comments[c.item_id].push(c);
+        });
+      }
+    },
+
+    async loadUploads() {
+      const { data } = await sb.from('onboarding_uploads').select('*').order('uploaded_at');
+      if (data) {
+        data.forEach(u => {
+          if (!this.uploads[u.item_id]) this.uploads[u.item_id] = [];
+          this.uploads[u.item_id].push(u);
+        });
+      }
+    },
+
+    async saveResponse(itemId, value) {
+      this.flash();
+      const existing = this.responses[itemId];
+      const payload = {
+        item_id:    itemId,
+        value:      value,
+        is_complete: existing?.is_complete || false,
+        updated_at: new Date().toISOString(),
+      };
+      await sb.from('onboarding_responses').upsert(payload, { onConflict: 'item_id' });
+      this.responses[itemId] = { ...this.responses[itemId], ...payload };
+      this.flash(true);
+    },
+
+    async toggleComplete(itemId) {
+      if (!this.isConsultant) return;
+      const current = this.responses[itemId]?.is_complete || false;
+      const payload = {
+        item_id:      itemId,
+        value:        this.responses[itemId]?.value || '',
+        is_complete:  !current,
+        completed_at: !current ? new Date().toISOString() : null,
+        updated_at:   new Date().toISOString(),
+      };
+      await sb.from('onboarding_responses').upsert(payload, { onConflict: 'item_id' });
+      this.responses[itemId] = payload;
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    async addComment(itemId) {
+      const el = document.getElementById('comment-input-' + itemId);
+      const message = el?.value?.trim();
+      if (!message) return;
+      const payload = {
+        item_id:     itemId,
+        author_type: this.isConsultant ? 'consultant' : 'client',
+        author_name: this.isConsultant ? 'Consultant' : 'Grant Law Chambers',
+        message,
+      };
+      const { data } = await sb.from('onboarding_comments').insert(payload).select().single();
+      if (data) {
+        if (!this.comments[itemId]) this.comments[itemId] = [];
+        this.comments[itemId].push(data);
+      }
+      if (el) el.value = '';
+    },
+
+    async uploadFiles(itemId, event) {
+      const files = Array.from(event.target.files);
+      for (const file of files) {
+        const key = `onboarding/${itemId}/${Date.now()}-${file.name}`;
+        const { error } = await sb.storage.from(this.STORAGE_BUCKET).upload(key, file);
+        if (error) { alert('Upload failed: ' + error.message); continue; }
+        const { data } = await sb.from('onboarding_uploads').insert({
+          item_id: itemId, file_name: file.name,
+          storage_key: key, file_size_bytes: file.size,
+        }).select().single();
+        if (data) {
+          if (!this.uploads[itemId]) this.uploads[itemId] = [];
+          this.uploads[itemId].push(data);
+        }
+      }
+      event.target.value = '';
+    },
+
+    async deleteUpload(itemId, upload) {
+      if (!confirm('Remove "' + upload.file_name + '"?')) return;
+      await sb.storage.from(this.STORAGE_BUCKET).remove([upload.storage_key]);
+      await sb.from('onboarding_uploads').delete().eq('id', upload.id);
+      this.uploads[itemId] = (this.uploads[itemId] || []).filter(u => u.id !== upload.id);
+    },
+
+    checkPin() {
+      if (this.pinInput === this.CONSULTANT_PIN) {
+        this.isConsultant = true;
+        sessionStorage.setItem('portal_consultant', this.CONSULTANT_PIN);
+        this.showPin = false; this.pinInput = ''; this.pinError = '';
+        this.$nextTick(() => lucide.createIcons());
+      } else {
+        this.pinError = 'Incorrect PIN. Please try again.';
+        this.pinInput = '';
+      }
+    },
+
+    exitConsultant() {
+      this.isConsultant = false;
+      sessionStorage.removeItem('portal_consultant');
+    },
+
+    flash(done = false) {
+      if (done) { this.saving = false; this.saved = true; setTimeout(() => this.saved = false, 1800); }
+      else { this.saving = true; this.saved = false; }
+    },
+
+    formatTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts);
+      const now = new Date();
+      const diffMin = Math.floor((now - d) / 60000);
+      if (diffMin < 1) return 'just now';
+      if (diffMin < 60) return diffMin + 'm ago';
+      if (diffMin < 1440) return Math.floor(diffMin / 60) + 'h ago';
+      return d.toLocaleDateString('en-JM', { day: 'numeric', month: 'short' });
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>
