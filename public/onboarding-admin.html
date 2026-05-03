@@ -8,6 +8,7 @@
   <script>tailwind.config={theme:{extend:{colors:{navy:{50:'#f0f4ff',100:'#e0e8f7',600:'#2d4a8a',700:'#1e3570',800:'#152860',900:'#0d1c47'},gold:{300:'#f0d080',400:'#e8c040',500:'#c8a030',600:'#a88020'}}}}}</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="/js/config.js"></script>
+  <script src="/js/sections.js"></script>
   <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="min-h-screen bg-gray-100" x-data="adminApp()" x-init="init()">
@@ -76,21 +77,36 @@
         </template>
         <div class="divide-y divide-gray-100">
           <template x-for="c in companies" :key="c.id">
-            <div class="px-5 py-4 flex items-center justify-between gap-4">
-              <div class="flex-1">
-                <p class="text-sm font-semibold text-gray-900" x-text="c.company_name"></p>
-                <p class="text-xs text-gray-400 mt-0.5">Code: <span class="font-mono" x-text="c.access_code"></span></p>
-              </div>
-              <div class="flex items-center gap-3">
-                <div class="text-right">
-                  <p class="text-sm font-semibold text-navy-800" x-text="progress(c.id) + '%'"></p>
-                  <p class="text-xs text-gray-400">complete</p>
+            <div class="px-5 py-4">
+              <div class="flex items-start justify-between gap-4 flex-wrap">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-semibold text-gray-900" x-text="c.company_name"></p>
+                    <span x-show="!c.is_active" class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">disabled</span>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-0.5">Code: <span class="font-mono" x-text="c.access_code"></span></p>
+                  <div class="flex items-center gap-2 mt-2">
+                    <div class="w-36 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-navy-600 rounded-full transition-all" :style="'width:' + progress(c.id) + '%'"></div>
+                    </div>
+                    <span class="text-xs text-gray-500" x-text="(responseCounts[c.id] || 0) + ' / ' + TOTAL_ITEMS + ' complete (' + progress(c.id) + '%)'"></span>
+                  </div>
                 </div>
-                <button @click="viewCompany(c)" class="px-3 py-1.5 bg-navy-50 hover:bg-navy-100 text-navy-800 text-xs font-semibold rounded-lg">Open</button>
-                <button @click="toggleActive(c)"
-                  :class="c.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'"
-                  class="px-3 py-1.5 text-xs font-semibold rounded-lg"
-                  x-text="c.is_active ? 'Disable' : 'Enable'"></button>
+                <div class="flex items-center gap-2 flex-wrap shrink-0">
+                  <button @click="openFiles(c)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg">
+                    Files
+                  </button>
+                  <button @click="openCustomize(c)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg">
+                    Customize
+                  </button>
+                  <button @click="viewCompany(c)" class="px-3 py-1.5 bg-navy-50 hover:bg-navy-100 text-navy-800 text-xs font-semibold rounded-lg">
+                    Open
+                  </button>
+                  <button @click="toggleActive(c)"
+                    :class="c.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-lg"
+                    x-text="c.is_active ? 'Disable' : 'Enable'"></button>
+                </div>
               </div>
             </div>
           </template>
@@ -99,16 +115,143 @@
     </main>
   </div>
 
+  <!-- ══ FILES MODAL ══ -->
+  <div x-show="filesOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-10">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:85vh">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-bold text-gray-900" x-text="(activeCompany ? activeCompany.company_name : '') + ' — Uploaded Files'"></h2>
+          <p class="text-xs text-gray-400 mt-0.5" x-text="filesList.length + ' file' + (filesList.length !== 1 ? 's' : '')"></p>
+        </div>
+        <button @click="filesOpen = false" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="overflow-y-auto flex-1 px-6 py-4">
+        <div x-show="filesLoading" class="py-10 text-center text-sm text-gray-400">Loading files…</div>
+        <div x-show="!filesLoading && filesList.length === 0" class="py-10 text-center text-sm text-gray-400">
+          No files uploaded yet for this company.
+        </div>
+        <template x-if="!filesLoading && filesList.length > 0">
+          <div class="space-y-1">
+            <template x-for="group in filesGrouped" :key="group.sectionId + '-' + group.itemId">
+              <div>
+                <div x-show="group.isFirstInSection" class="pt-4 pb-1 first:pt-0">
+                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wider" x-text="group.sectionTitle"></p>
+                </div>
+                <p class="text-xs font-semibold text-gray-600 mt-2 mb-1.5" x-text="group.itemTitle"></p>
+                <template x-for="f in group.files" :key="f.id">
+                  <div class="flex items-center gap-3 p-3 mb-1 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <svg class="w-7 h-7 text-navy-400 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900 truncate" x-text="f.file_name"></p>
+                      <p class="text-xs text-gray-400" x-text="formatBytes(f.file_size_bytes) + ' · ' + formatDate(f.uploaded_at)"></p>
+                    </div>
+                    <button @click="downloadFile(f)"
+                      class="shrink-0 px-3 py-1.5 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap">
+                      Download
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CUSTOMIZE MODAL ══ -->
+  <div x-show="customizeOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-10">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:85vh">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-bold text-gray-900" x-text="'Customize — ' + (activeCompany ? activeCompany.company_name : '')"></h2>
+          <p class="text-xs text-gray-400 mt-0.5">Rename items, update descriptions, or hide items not relevant to this company</p>
+        </div>
+        <button @click="customizeOpen = false" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="overflow-y-auto flex-1 px-6 py-4">
+        <template x-for="item in customizeItems" :key="item.id">
+          <div>
+            <div x-show="item.isFirstInSection" class="pt-4 pb-2">
+              <p class="text-xs font-bold text-navy-800 uppercase tracking-wider border-b border-gray-100 pb-1.5" x-text="item.sectionTitle"></p>
+            </div>
+            <div class="rounded-lg border p-3 mb-2 transition-colors"
+              :class="item.hidden ? 'border-gray-200 bg-gray-50 opacity-50' : 'border-gray-200 bg-white'">
+              <div class="flex items-start gap-3">
+                <div class="flex-1 space-y-2 min-w-0">
+                  <input type="text" x-model="item.title" :disabled="item.hidden"
+                    class="block w-full rounded border border-gray-200 px-2.5 py-1.5 text-sm font-medium focus:border-navy-500 outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                    :placeholder="item.defaultTitle" />
+                  <template x-if="!item.isInfo">
+                    <textarea x-model="item.description" rows="2" :disabled="item.hidden"
+                      class="block w-full rounded border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 focus:border-navy-500 outline-none resize-none disabled:bg-gray-50 disabled:text-gray-400"
+                      :placeholder="item.defaultDescription"></textarea>
+                  </template>
+                  <button x-show="item.title !== item.defaultTitle || item.description !== item.defaultDescription"
+                    @click="item.title = item.defaultTitle; item.description = item.defaultDescription"
+                    class="text-xs text-gray-400 hover:text-navy-700 underline">
+                    Reset to default
+                  </button>
+                </div>
+                <label class="shrink-0 flex flex-col items-center gap-1 pt-0.5 cursor-pointer select-none">
+                  <span class="text-xs text-gray-400">Hide</span>
+                  <div @click="item.hidden = !item.hidden"
+                    class="w-10 h-5 rounded-full transition-colors flex items-center px-0.5 cursor-pointer"
+                    :class="item.hidden ? 'bg-gray-400' : 'bg-green-500'">
+                    <div class="w-4 h-4 bg-white rounded-full shadow transition-transform"
+                      :class="item.hidden ? 'translate-x-5' : 'translate-x-0'"></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between shrink-0">
+        <button @click="resetAllCustomize()" class="text-sm text-gray-400 hover:text-red-600 transition-colors">
+          Reset all to defaults
+        </button>
+        <div class="flex gap-2">
+          <button @click="customizeOpen = false" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button @click="saveCustomize()" :disabled="customizeSaving"
+            class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+            <span x-text="customizeSaving ? 'Saving...' : 'Save Changes'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 const sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON__);
 const ADMIN_PIN = 'ADMIN2025';
-const TOTAL_ITEMS = 38;
+const TOTAL_ITEMS = SECTIONS.reduce(function(acc, s) {
+  return acc + s.items.filter(function(i) { return i.type !== 'info'; }).length;
+}, 0);
+
+const ITEM_MAP = {};
+SECTIONS.forEach(function(s) {
+  s.items.forEach(function(i) {
+    ITEM_MAP[i.id] = { itemTitle: i.title, sectionTitle: s.title, sectionId: s.id, isInfo: i.type === 'info' };
+  });
+});
 
 function adminApp() {
   return {
     authed: false, pin: '', pinError: '',
     companies: [], responseCounts: {},
     newName: '', newCode: '', adding: false, addError: '',
+    activeCompany: null,
+    filesOpen: false, filesLoading: false, filesList: [],
+    customizeOpen: false, customizeSaving: false, customizeItems: [],
 
     async init() {
       this.authed = sessionStorage.getItem('ob_admin') === ADMIN_PIN;
@@ -128,9 +271,12 @@ function adminApp() {
     async load() {
       const { data: companies } = await sb.from('onboarding_clients').select('*').order('company_name');
       this.companies = companies || [];
+      this.responseCounts = {};
       if (this.companies.length) {
         const { data: counts } = await sb.from('onboarding_responses').select('client_id').eq('is_complete', true);
-        if (counts) counts.forEach(r => { this.responseCounts[r.client_id] = (this.responseCounts[r.client_id] || 0) + 1; });
+        if (counts) counts.forEach(function(r) {
+          this.responseCounts[r.client_id] = (this.responseCounts[r.client_id] || 0) + 1;
+        }.bind(this));
       }
     },
 
@@ -142,7 +288,9 @@ function adminApp() {
       this.addError = '';
       if (!this.newName || !this.newCode) return;
       this.adding = true;
-      const { error } = await sb.from('onboarding_clients').insert({ company_name: this.newName.trim(), access_code: this.newCode.trim() });
+      const { error } = await sb.from('onboarding_clients').insert({
+        company_name: this.newName.trim(), access_code: this.newCode.trim()
+      });
       this.adding = false;
       if (error) { this.addError = error.message; return; }
       this.newName = ''; this.newCode = '';
@@ -159,6 +307,110 @@ function adminApp() {
     async toggleActive(c) {
       await sb.from('onboarding_clients').update({ is_active: !c.is_active }).eq('id', c.id);
       c.is_active = !c.is_active;
+    },
+
+    // Files modal
+    async openFiles(c) {
+      this.activeCompany = c;
+      this.filesList = [];
+      this.filesOpen = true;
+      this.filesLoading = true;
+      const { data } = await sb.from('onboarding_uploads')
+        .select('*').eq('client_id', c.id).order('uploaded_at');
+      this.filesList = data || [];
+      this.filesLoading = false;
+    },
+
+    get filesGrouped() {
+      const groups = {};
+      SECTIONS.forEach(function(s) {
+        s.items.forEach(function(i) {
+          groups[i.id] = { itemId: i.id, itemTitle: i.title, sectionTitle: s.title, sectionId: s.id, files: [] };
+        });
+      });
+      this.filesList.forEach(function(f) {
+        if (groups[f.item_id]) groups[f.item_id].files.push(f);
+      });
+      var result = [];
+      var lastSection = null;
+      SECTIONS.forEach(function(s) {
+        s.items.forEach(function(i) {
+          var g = groups[i.id];
+          if (!g || g.files.length === 0) return;
+          g.isFirstInSection = g.sectionId !== lastSection;
+          lastSection = g.sectionId;
+          result.push(Object.assign({}, g));
+        });
+      });
+      return result;
+    },
+
+    async downloadFile(f) {
+      const { data, error } = await sb.storage.from('documents').createSignedUrl(f.storage_key, 3600);
+      if (error) { alert('Could not generate download link: ' + error.message); return; }
+      window.open(data.signedUrl, '_blank');
+    },
+
+    formatBytes(bytes) {
+      if (!bytes) return '';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    },
+
+    formatDate(ts) {
+      if (!ts) return '';
+      return new Date(ts).toLocaleDateString('en-JM', { day: 'numeric', month: 'short', year: 'numeric' });
+    },
+
+    // Customize modal
+    async openCustomize(c) {
+      this.activeCompany = c;
+      const overrides = c.checklist_overrides || {};
+      this.customizeItems = [];
+      SECTIONS.forEach(function(s) {
+        s.items.forEach(function(item, idx) {
+          this.customizeItems.push({
+            id: item.id,
+            sectionTitle: s.title,
+            sectionId: s.id,
+            isFirstInSection: idx === 0,
+            isInfo: item.type === 'info',
+            defaultTitle: item.title,
+            defaultDescription: item.description || '',
+            title:       (overrides[item.id] && overrides[item.id].title       !== undefined) ? overrides[item.id].title       : item.title,
+            description: (overrides[item.id] && overrides[item.id].description !== undefined) ? overrides[item.id].description : (item.description || ''),
+            hidden:      (overrides[item.id] && overrides[item.id].hidden      !== undefined) ? overrides[item.id].hidden      : false,
+          });
+        }.bind(this));
+      }.bind(this));
+      this.customizeOpen = true;
+    },
+
+    resetAllCustomize() {
+      if (!confirm('Reset all customizations for this company to defaults?')) return;
+      this.customizeItems.forEach(function(i) {
+        i.title = i.defaultTitle;
+        i.description = i.defaultDescription;
+        i.hidden = false;
+      });
+    },
+
+    async saveCustomize() {
+      this.customizeSaving = true;
+      const overrides = {};
+      this.customizeItems.forEach(function(i) {
+        const changed = i.title !== i.defaultTitle || i.description !== i.defaultDescription || i.hidden;
+        if (changed) overrides[i.id] = { title: i.title, description: i.description, hidden: i.hidden };
+      });
+      const { error } = await sb.from('onboarding_clients')
+        .update({ checklist_overrides: overrides })
+        .eq('id', this.activeCompany.id);
+      this.customizeSaving = false;
+      if (error) { alert('Save failed: ' + error.message); return; }
+      const c = this.companies.find(function(c) { return c.id === this.activeCompany.id; }.bind(this));
+      if (c) c.checklist_overrides = overrides;
+      this.customizeOpen = false;
     },
 
     logout() {
