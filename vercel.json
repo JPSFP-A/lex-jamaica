@@ -6,7 +6,7 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/", "destination": "/onboarding.html" }
+    { "source": "/", "destination": "/onboarding-login.html" }
   ],
   "headers": [
     {

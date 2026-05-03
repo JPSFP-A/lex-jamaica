@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grant Law Chambers — QBO Implementation Portal</title>
+  <title>QBO Implementation Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -61,7 +61,7 @@
           <i data-lucide="scale" class="h-5 w-5 text-navy-900"></i>
         </div>
         <div>
-          <p class="text-xs text-navy-100 font-medium uppercase tracking-wider">Grant Law Chambers</p>
+          <p class="text-xs text-navy-100 font-medium uppercase tracking-wider" x-text="companyName || 'QBO Portal'"></p>
           <h1 class="text-base font-bold leading-tight">QuickBooks Implementation Portal</h1>
         </div>
       </div>
@@ -79,6 +79,18 @@
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors">
           <i :data-lucide="isConsultant ? 'shield-check' : 'shield'" class="h-3.5 w-3.5"></i>
           <span x-text="isConsultant ? 'Consultant' : 'Client View'"></span>
+        </button>
+        <!-- Back to Admin (admin viewing mode) -->
+        <button x-show="isAdminViewing" @click="backToAdmin()"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500 text-white hover:bg-amber-400 transition-colors">
+          <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i>
+          <span>Admin</span>
+        </button>
+        <!-- Logout -->
+        <button @click="logout()"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-navy-800 text-gray-300 hover:bg-navy-700 transition-colors">
+          <i data-lucide="log-out" class="h-3.5 w-3.5"></i>
+          <span class="hidden sm:inline">Logout</span>
         </button>
       </div>
     </div>
@@ -510,17 +522,20 @@ const SECTIONS = [
 function portalApp() {
   return {
     sections: SECTIONS.map(s => ({ ...s, items: s.items.map(i => ({ ...i, showComments: false })) })),
-    responses: {},   // { item_id: { value, is_complete, completed_at } }
-    comments:  {},   // { item_id: [{ id, author_type, author_name, message, created_at }] }
-    uploads:   {},   // { item_id: [{ id, file_name, storage_key }] }
+    responses: {},
+    comments:  {},
+    uploads:   {},
+    clientId: '',
+    companyName: '',
     isConsultant: false,
+    isAdminViewing: false,
     showPin: false,
     pinInput: '',
     pinError: '',
     saving: false,
     saved: false,
     calOpen: false,
-    CONSULTANT_PIN: 'LC2025',  // ← change this to your preferred PIN
+    CONSULTANT_PIN: 'LC2025',
     STORAGE_BUCKET: 'documents',
 
     get totalCount()     { return this.sections.flatMap(s => s.items.filter(i => i.type !== 'info')).length; },
@@ -534,18 +549,33 @@ function portalApp() {
     },
 
     async init() {
-      this.isConsultant = sessionStorage.getItem('portal_consultant') === this.CONSULTANT_PIN;
+      this.clientId = sessionStorage.getItem('ob_client_id') || '';
+      this.companyName = sessionStorage.getItem('ob_company_name') || '';
+      this.isAdminViewing = sessionStorage.getItem('ob_admin_viewing') === 'true';
+
+      if (!this.clientId) {
+        window.location.href = '/onboarding-login.html';
+        return;
+      }
+
+      // Admin viewing a company always gets consultant mode
+      if (this.isAdminViewing) {
+        this.isConsultant = true;
+      } else {
+        this.isConsultant = sessionStorage.getItem('portal_consultant') === this.CONSULTANT_PIN;
+      }
+
       await Promise.all([this.loadResponses(), this.loadComments(), this.loadUploads()]);
       lucide.createIcons();
     },
 
     async loadResponses() {
-      const { data } = await sb.from('onboarding_responses').select('*');
+      const { data } = await sb.from('onboarding_responses').select('*').eq('client_id', this.clientId);
       if (data) data.forEach(r => { this.responses[r.item_id] = r; });
     },
 
     async loadComments() {
-      const { data } = await sb.from('onboarding_comments').select('*').order('created_at');
+      const { data } = await sb.from('onboarding_comments').select('*').eq('client_id', this.clientId).order('created_at');
       if (data) {
         data.forEach(c => {
           if (!this.comments[c.item_id]) this.comments[c.item_id] = [];
@@ -555,7 +585,7 @@ function portalApp() {
     },
 
     async loadUploads() {
-      const { data } = await sb.from('onboarding_uploads').select('*').order('uploaded_at');
+      const { data } = await sb.from('onboarding_uploads').select('*').eq('client_id', this.clientId).order('uploaded_at');
       if (data) {
         data.forEach(u => {
           if (!this.uploads[u.item_id]) this.uploads[u.item_id] = [];
@@ -568,12 +598,13 @@ function portalApp() {
       this.flash();
       const existing = this.responses[itemId];
       const payload = {
-        item_id:    itemId,
-        value:      value,
+        client_id:   this.clientId,
+        item_id:     itemId,
+        value:       value,
         is_complete: existing?.is_complete || false,
-        updated_at: new Date().toISOString(),
+        updated_at:  new Date().toISOString(),
       };
-      await sb.from('onboarding_responses').upsert(payload, { onConflict: 'item_id' });
+      await sb.from('onboarding_responses').upsert(payload, { onConflict: 'client_id,item_id' });
       this.responses[itemId] = { ...this.responses[itemId], ...payload };
       this.flash(true);
     },
@@ -582,13 +613,14 @@ function portalApp() {
       if (!this.isConsultant) return;
       const current = this.responses[itemId]?.is_complete || false;
       const payload = {
+        client_id:    this.clientId,
         item_id:      itemId,
         value:        this.responses[itemId]?.value || '',
         is_complete:  !current,
         completed_at: !current ? new Date().toISOString() : null,
         updated_at:   new Date().toISOString(),
       };
-      await sb.from('onboarding_responses').upsert(payload, { onConflict: 'item_id' });
+      await sb.from('onboarding_responses').upsert(payload, { onConflict: 'client_id,item_id' });
       this.responses[itemId] = payload;
       this.$nextTick(() => lucide.createIcons());
     },
@@ -598,9 +630,10 @@ function portalApp() {
       const message = el?.value?.trim();
       if (!message) return;
       const payload = {
+        client_id:   this.clientId,
         item_id:     itemId,
         author_type: this.isConsultant ? 'consultant' : 'client',
-        author_name: this.isConsultant ? 'Consultant' : 'Grant Law Chambers',
+        author_name: this.isConsultant ? 'Consultant' : this.companyName,
         message,
       };
       const { data } = await sb.from('onboarding_comments').insert(payload).select().single();
@@ -614,10 +647,11 @@ function portalApp() {
     async uploadFiles(itemId, event) {
       const files = Array.from(event.target.files);
       for (const file of files) {
-        const key = `onboarding/${itemId}/${Date.now()}-${file.name}`;
+        const key = `onboarding/${this.clientId}/${itemId}/${Date.now()}-${file.name}`;
         const { error } = await sb.storage.from(this.STORAGE_BUCKET).upload(key, file);
         if (error) { alert('Upload failed: ' + error.message); continue; }
         const { data } = await sb.from('onboarding_uploads').insert({
+          client_id: this.clientId,
           item_id: itemId, file_name: file.name,
           storage_key: key, file_size_bytes: file.size,
         }).select().single();
@@ -651,6 +685,21 @@ function portalApp() {
     exitConsultant() {
       this.isConsultant = false;
       sessionStorage.removeItem('portal_consultant');
+    },
+
+    logout() {
+      sessionStorage.removeItem('ob_client_id');
+      sessionStorage.removeItem('ob_company_name');
+      sessionStorage.removeItem('ob_admin_viewing');
+      sessionStorage.removeItem('portal_consultant');
+      window.location.href = '/onboarding-login.html';
+    },
+
+    backToAdmin() {
+      sessionStorage.removeItem('ob_client_id');
+      sessionStorage.removeItem('ob_company_name');
+      sessionStorage.removeItem('ob_admin_viewing');
+      window.location.href = '/onboarding-admin.html';
     },
 
     flash(done = false) {

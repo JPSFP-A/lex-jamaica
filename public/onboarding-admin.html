@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Implementation Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{navy:{50:'#f0f4ff',100:'#e0e8f7',600:'#2d4a8a',700:'#1e3570',800:'#152860',900:'#0d1c47'},gold:{300:'#f0d080',400:'#e8c040',500:'#c8a030',600:'#a88020'}}}}}</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <style>[x-cloak]{display:none!important}</style>
+</head>
+<body class="min-h-screen bg-gray-100" x-data="adminApp()" x-init="init()">
+
+  <!-- PIN Gate -->
+  <div x-show="!authed" x-cloak class="min-h-screen bg-navy-900 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-14 h-14 bg-gold-500 rounded-xl mb-3">
+          <svg class="w-7 h-7 text-navy-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <h1 class="text-xl font-bold text-white">Admin Access</h1>
+        <p class="text-sm text-gray-400 mt-1">Enter your admin PIN</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 space-y-4">
+        <input type="password" x-model="pin" @keydown.enter="checkPin()" maxlength="20"
+          class="block w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-center tracking-widest focus:border-navy-600 outline-none"
+          placeholder="Enter PIN" autofocus />
+        <div x-show="pinError" class="text-sm text-red-600 text-center" x-text="pinError"></div>
+        <button @click="checkPin()" class="w-full py-3 bg-navy-800 hover:bg-navy-700 text-white font-semibold rounded-xl">Unlock</button>
+        <div class="text-center"><a href="/onboarding-login.html" class="text-xs text-gray-400 hover:text-navy-700">Back to client login</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div x-show="authed" x-cloak>
+    <header class="bg-navy-900 text-white shadow-lg">
+      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-gold-500 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-navy-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <span class="font-bold">Admin Dashboard</span>
+        </div>
+        <button @click="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Sign out</button>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+      <!-- Add Company -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <h2 class="font-semibold text-gray-900 mb-4">Add New Company</h2>
+        <div class="flex gap-3 flex-wrap">
+          <input x-model="newName" type="text" placeholder="Company name"
+            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          <input x-model="newCode" type="text" placeholder="Access code"
+            class="w-40 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          <button @click="addCompany()" :disabled="!newName || !newCode || adding"
+            class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+            <span x-text="adding ? 'Adding...' : '+ Add'"></span>
+          </button>
+        </div>
+        <div x-show="addError" class="mt-2 text-sm text-red-600" x-text="addError"></div>
+      </div>
+
+      <!-- Companies List -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 class="font-semibold text-gray-900">Companies</h2>
+          <span class="text-xs text-gray-400" x-text="companies.length + ' total'"></span>
+        </div>
+        <template x-if="companies.length === 0">
+          <div class="px-5 py-10 text-center text-sm text-gray-400">No companies yet. Add one above.</div>
+        </template>
+        <div class="divide-y divide-gray-100">
+          <template x-for="c in companies" :key="c.id">
+            <div class="px-5 py-4 flex items-center justify-between gap-4">
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-gray-900" x-text="c.company_name"></p>
+                <p class="text-xs text-gray-400 mt-0.5">Code: <span class="font-mono" x-text="c.access_code"></span></p>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="text-right">
+                  <p class="text-sm font-semibold text-navy-800" x-text="progress(c.id) + '%'"></p>
+                  <p class="text-xs text-gray-400">complete</p>
+                </div>
+                <button @click="viewCompany(c)" class="px-3 py-1.5 bg-navy-50 hover:bg-navy-100 text-navy-800 text-xs font-semibold rounded-lg">Open</button>
+                <button @click="toggleActive(c)"
+                  :class="c.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'"
+                  class="px-3 py-1.5 text-xs font-semibold rounded-lg"
+                  x-text="c.is_active ? 'Disable' : 'Enable'"></button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+const sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON__);
+const ADMIN_PIN = 'ADMIN2025';
+const TOTAL_ITEMS = 38;
+
+function adminApp() {
+  return {
+    authed: false, pin: '', pinError: '',
+    companies: [], responseCounts: {},
+    newName: '', newCode: '', adding: false, addError: '',
+
+    async init() {
+      this.authed = sessionStorage.getItem('ob_admin') === ADMIN_PIN;
+      if (this.authed) await this.load();
+    },
+
+    checkPin() {
+      if (this.pin === ADMIN_PIN) {
+        sessionStorage.setItem('ob_admin', ADMIN_PIN);
+        this.authed = true;
+        this.load();
+      } else {
+        this.pinError = 'Incorrect PIN.';
+      }
+    },
+
+    async load() {
+      const { data: companies } = await sb.from('onboarding_clients').select('*').order('company_name');
+      this.companies = companies || [];
+      if (this.companies.length) {
+        const { data: counts } = await sb.from('onboarding_responses').select('client_id').eq('is_complete', true);
+        if (counts) counts.forEach(r => { this.responseCounts[r.client_id] = (this.responseCounts[r.client_id] || 0) + 1; });
+      }
+    },
+
+    progress(clientId) {
+      return TOTAL_ITEMS > 0 ? Math.round(((this.responseCounts[clientId] || 0) / TOTAL_ITEMS) * 100) : 0;
+    },
+
+    async addCompany() {
+      this.addError = '';
+      if (!this.newName || !this.newCode) return;
+      this.adding = true;
+      const { error } = await sb.from('onboarding_clients').insert({ company_name: this.newName.trim(), access_code: this.newCode.trim() });
+      this.adding = false;
+      if (error) { this.addError = error.message; return; }
+      this.newName = ''; this.newCode = '';
+      await this.load();
+    },
+
+    viewCompany(c) {
+      sessionStorage.setItem('ob_client_id', c.id);
+      sessionStorage.setItem('ob_company_name', c.company_name);
+      sessionStorage.setItem('ob_admin_viewing', 'true');
+      window.location.href = '/onboarding.html';
+    },
+
+    async toggleActive(c) {
+      await sb.from('onboarding_clients').update({ is_active: !c.is_active }).eq('id', c.id);
+      c.is_active = !c.is_active;
+    },
+
+    logout() {
+      sessionStorage.removeItem('ob_admin');
+      this.authed = false; this.pin = '';
+    },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>
