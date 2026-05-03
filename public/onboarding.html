@@ -440,11 +440,11 @@ const SECTIONS = [
   {
     id: 'expenses', title: '6. Accounts Payable & Expenses', icon: 'receipt', color: 'orange', open: false,
     items: [
-      { id:'suppliers', title:'Regular Supplier / Vendor List', description:'Names and contact details of all businesses you regularly pay (landlord, utilities, stationery, IT, etc.).', type:'textarea', placeholder:'1. Kingston Properties Ltd — Office rent\n2. JPS — Utilities\n3. Flow Business — Internet/phone\n4. …', canUpload:false },
+      { id:'suppliers', title:'Regular Supplier / Vendor List', description:'Upload your vendor list — spreadsheet, Word doc, or PDF. Include name, type of service, and contact details for each supplier you regularly pay.', type:'upload', canUpload:true },
       { id:'bills-outstanding', title:'Outstanding Bills Not Yet Paid', description:'Any supplier invoices or bills received but not yet paid. Include: supplier, date, amount, and due date.', type:'upload', canUpload:true },
-      { id:'bills-total', title:'Total Outstanding AP (J$)', description:'Grand total of all unpaid bills as of today.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'bills-total', title:'Total Outstanding AP (J$)', description:'Grand total of all unpaid bills as of today.', type:'number', placeholder:'0.00', canUpload:true },
       { id:'rent-lease', title:'Office Lease Agreement', description:'Upload your current office lease. Key details: monthly rent, lease start/end date, deposit held.', type:'upload', canUpload:true },
-      { id:'recurring-costs', title:'Recurring Monthly Costs', description:'List of all regular monthly expenses with amounts.', type:'textarea', placeholder:'Office rent: J$120,000\nInternet/phone: J$15,000\nAntivirus/IT: J$5,000\nBar fees (pro-rated): J$3,000\n…', canUpload:false },
+      { id:'recurring-costs', title:'Recurring Monthly Costs', description:'List of all regular monthly expenses with amounts. You can type here or upload a spreadsheet.', type:'textarea', placeholder:'Office rent: J$120,000\nInternet/phone: J$15,000\nAntivirus/IT: J$5,000\nBar fees (pro-rated): J$3,000\n…', canUpload:true },
       { id:'receipts-ytd', title:'Expense Receipts — Current Financial Year', description:'All receipts and invoices for expenses paid. Upload as a ZIP or folder. These are needed for GCT input credit claims.', type:'upload', canUpload:true },
     ]
   },
