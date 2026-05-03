@@ -1,31 +1,31 @@
 // Edge Function: register-firm
-// Creates: Supabase Auth user → tenant → profiles row
-// profiles.id must equal auth.users.id, so auth user is created first.
+// Creates a new law firm tenant + admin user in one atomic operation.
+// Order: tenant → auth user → profile (profile.id = auth user id).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const CORS = {
+const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type, authorization',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
 
   try {
     const { firmName, fullName, email, password } = await req.json();
 
     if (!firmName || !fullName || !email || !password) {
-      return json({ error: 'All fields are required' }, 400);
-    }
-    if (password.length < 8) {
-      return json({ error: 'Password must be at least 8 characters' }, 400);
+      return new Response(JSON.stringify({ error: 'firmName, fullName, email, and password are required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
     // 1. Create tenant
@@ -35,9 +35,9 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    if (tenantErr) throw tenantErr;
+    if (tenantErr) throw new Error('Failed to create tenant: ' + tenantErr.message);
 
-    // 2. Create Supabase Auth user (profiles.id = auth.uid(), so this comes first)
+    // 2. Create auth user FIRST (profile.id must equal auth.uid)
     const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -52,50 +52,31 @@ Deno.serve(async (req) => {
 
     if (authErr) {
       await supabase.from('tenants').delete().eq('id', tenant.id);
-      throw authErr;
+      throw new Error('Failed to create auth user: ' + authErr.message);
     }
 
     const authUserId = authData.user.id;
 
-    // 3. Create profiles row (id = auth user id)
+    // 3. Create profile
     const { error: profileErr } = await supabase
       .from('profiles')
-      .insert({
-        id:        authUserId,
-        tenant_id: tenant.id,
-        email,
-        full_name: fullName,
-        role:      'admin',
-        is_active: true,
-      });
+      .insert({ id: authUserId, tenant_id: tenant.id, email, full_name: fullName, role: 'admin' });
 
     if (profileErr) {
       await supabase.auth.admin.deleteUser(authUserId);
       await supabase.from('tenants').delete().eq('id', tenant.id);
-      throw profileErr;
+      throw new Error('Failed to create profile: ' + profileErr.message);
     }
 
-    // 4. Audit
-    await supabase.from('audit_events').insert({
-      tenant_id:     tenant.id,
-      actor_user_id: authUserId,
-      action:        'register',
-      entity_type:   'tenant',
-      entity_id:     tenant.id,
-      metadata:      { firm_name: firmName, email },
-    });
+    return new Response(
+      JSON.stringify({ success: true, tenantId: tenant.id, userId: authUserId }),
+      { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
 
-    return json({ success: true, tenantId: tenant.id });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('register-firm error:', message);
-    return json({ error: message }, 500);
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   }
 });
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-  });
-}
