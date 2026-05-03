@@ -100,8 +100,16 @@
                     </span>
                     <span x-show="!c.is_active" class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">disabled</span>
                   </div>
-                  <div class="flex items-center gap-3 mt-0.5 flex-wrap">
-                    <p class="text-xs text-gray-400">Code: <span class="font-mono" x-text="c.access_code"></span></p>
+                  <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs text-gray-400">Login code:</span>
+                      <span class="font-mono text-sm font-bold text-navy-800 bg-navy-50 border border-navy-100 px-2 py-0.5 rounded tracking-widest select-all" x-text="c.access_code"></span>
+                      <button @click="copyCode(c.access_code)" title="Copy code"
+                        class="text-gray-400 hover:text-navy-700 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                      </button>
+                      <span x-show="copiedId === c.id" class="text-xs text-green-600 font-medium">Copied!</span>
+                    </div>
                     <a x-show="c.proposal_url" :href="c.proposal_url" target="_blank" rel="noopener"
                       class="text-xs text-gold-600 hover:text-navy-700 font-medium underline">View Proposal ↗</a>
                   </div>
@@ -274,7 +282,7 @@ function adminApp() {
     authed: false, pin: '', pinError: '',
     companies: [], responseCounts: {},
     newName: '', newCode: '', newTemplate: 'general', newProposalUrl: '', adding: false, addError: '',
-    activeCompany: null,
+    activeCompany: null, copiedId: null,
     filesOpen: false, filesLoading: false, filesList: [],
     customizeOpen: false, customizeSaving: false, customizeItems: [],
 
@@ -332,6 +340,18 @@ function adminApp() {
       sessionStorage.setItem('ob_company_name', c.company_name);
       sessionStorage.setItem('ob_admin_viewing', 'true');
       window.location.href = '/onboarding.html';
+    },
+
+    copyCode(code) {
+      navigator.clipboard.writeText(code).catch(function() {
+        // fallback for older browsers
+        var el = document.createElement('textarea');
+        el.value = code; document.body.appendChild(el); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+      });
+      var c = this.companies.find(function(c) { return c.access_code === code; });
+      this.copiedId = c ? c.id : null;
+      setTimeout(function() { this.copiedId = null; }.bind(this), 2000);
     },
 
     async toggleActive(c) {
