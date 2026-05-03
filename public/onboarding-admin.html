@@ -121,6 +121,13 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap shrink-0">
+                  <!-- Activity button with pending-todo badge -->
+                  <button @click="openActivity(c)" class="relative px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 text-xs font-semibold rounded-lg">
+                    Activity
+                    <span x-show="(todoCounts[c.id] || 0) > 0"
+                      class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold leading-none"
+                      x-text="todoCounts[c.id]"></span>
+                  </button>
                   <button @click="openFiles(c)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg">
                     Files
                   </button>
@@ -141,6 +148,108 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- ══ ACTIVITY MODAL ══ -->
+  <div x-show="activityOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:88vh">
+
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-bold text-gray-900" x-text="(activeCompany ? activeCompany.company_name : '') + ' — Activity'"></h2>
+          <p class="text-xs text-gray-400 mt-0.5" x-text="activities.length + ' item' + (activities.length !== 1 ? 's' : '')"></p>
+        </div>
+        <button @click="activityOpen = false" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Add new entry -->
+      <div class="px-6 py-4 border-b border-gray-100 shrink-0 space-y-2">
+        <div class="flex gap-2">
+          <select x-model="newActType" class="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none shrink-0">
+            <option value="todo">To-do</option>
+            <option value="note">Note</option>
+            <option value="request">Request</option>
+            <option value="message">Message</option>
+            <option value="update">Update</option>
+          </select>
+          <input x-model="newActContent" type="text" placeholder="Enter content and press Enter…"
+            @keydown.enter="addActivity()"
+            class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          <button @click="addActivity()" :disabled="!newActContent.trim() || activityAdding"
+            class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg shrink-0">
+            Add
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab strip -->
+      <div class="px-6 pt-3 pb-0 flex gap-1 shrink-0 border-b border-gray-100 overflow-x-auto">
+        <template x-for="tab in activityTabs" :key="tab.key">
+          <button @click="activityTab = tab.key"
+            class="px-3 py-2 text-xs font-semibold rounded-t-lg whitespace-nowrap transition-colors border-b-2"
+            :class="activityTab === tab.key
+              ? 'border-navy-700 text-navy-800 bg-navy-50'
+              : 'border-transparent text-gray-400 hover:text-gray-700'">
+            <span x-text="tab.label"></span>
+            <span x-show="tabCount(tab.key) > 0"
+              class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
+              :class="tab.key === 'todo' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'"
+              x-text="tabCount(tab.key)"></span>
+          </button>
+        </template>
+      </div>
+
+      <!-- Activity list -->
+      <div class="overflow-y-auto flex-1 px-6 py-4">
+        <div x-show="activityLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
+        <div x-show="!activityLoading && filteredActivities.length === 0" class="py-10 text-center text-sm text-gray-400">
+          Nothing here yet.
+        </div>
+        <div class="space-y-2">
+          <template x-for="a in filteredActivities" :key="a.id">
+            <div class="flex gap-3 p-3 rounded-xl border transition-colors"
+              :class="a.type === 'todo' && a.is_done
+                ? 'border-gray-100 bg-gray-50 opacity-60'
+                : 'border-gray-200 bg-white'">
+
+              <!-- Todo checkbox / type dot -->
+              <div class="shrink-0 mt-0.5">
+                <template x-if="a.type === 'todo'">
+                  <button @click="toggleTodo(a)"
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
+                    :class="a.is_done ? 'border-green-500 bg-green-500' : 'border-gray-300 hover:border-navy-500'">
+                    <svg x-show="a.is_done" class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </button>
+                </template>
+                <template x-if="a.type !== 'todo'">
+                  <div class="w-2 h-2 rounded-full mt-1.5" :class="typeColor(a.type)"></div>
+                </template>
+              </div>
+
+              <!-- Content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-sm text-gray-800 leading-snug"
+                    :class="a.type === 'todo' && a.is_done ? 'line-through text-gray-400' : ''"
+                    x-text="a.content"></p>
+                  <button @click="deleteActivity(a)" class="shrink-0 text-gray-300 hover:text-red-400 transition-colors mt-0.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs font-semibold px-1.5 py-0.5 rounded" :class="typeBadge(a.type)" x-text="a.type.charAt(0).toUpperCase() + a.type.slice(1)"></span>
+                  <span class="text-xs text-gray-400" x-text="formatDate(a.created_at)"></span>
+                  <span x-show="a.type === 'todo' && a.is_done" class="text-xs text-green-600 font-medium">Done</span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ══ FILES MODAL ══ -->
@@ -283,6 +392,17 @@ function adminApp() {
     companies: [], responseCounts: {},
     newName: '', newCode: '', newTemplate: 'general', newProposalUrl: '', adding: false, addError: '',
     activeCompany: null, copiedId: null,
+    // Activity
+    activityOpen: false, activityLoading: false, activities: [], todoCounts: {},
+    newActType: 'todo', newActContent: '', activityAdding: false, activityTab: 'all',
+    activityTabs: [
+      { key: 'all',     label: 'All'     },
+      { key: 'todo',    label: 'To-do'   },
+      { key: 'request', label: 'Requests'},
+      { key: 'note',    label: 'Notes'   },
+      { key: 'message', label: 'Messages'},
+      { key: 'update',  label: 'Updates' },
+    ],
     filesOpen: false, filesLoading: false, filesList: [],
     customizeOpen: false, customizeSaving: false, customizeItems: [],
 
@@ -305,10 +425,15 @@ function adminApp() {
       const { data: companies } = await sb.from('onboarding_clients').select('*').order('company_name');
       this.companies = companies || [];
       this.responseCounts = {};
+      this.todoCounts = {};
       if (this.companies.length) {
         const { data: counts } = await sb.from('onboarding_responses').select('client_id').eq('is_complete', true);
         if (counts) counts.forEach(function(r) {
           this.responseCounts[r.client_id] = (this.responseCounts[r.client_id] || 0) + 1;
+        }.bind(this));
+        const { data: todos } = await sb.from('onboarding_activities').select('client_id').eq('type', 'todo').eq('is_done', false);
+        if (todos) todos.forEach(function(t) {
+          this.todoCounts[t.client_id] = (this.todoCounts[t.client_id] || 0) + 1;
         }.bind(this));
       }
     },
@@ -340,6 +465,73 @@ function adminApp() {
       sessionStorage.setItem('ob_company_name', c.company_name);
       sessionStorage.setItem('ob_admin_viewing', 'true');
       window.location.href = '/onboarding.html';
+    },
+
+    // ── ACTIVITY ──────────────────────────────────────────────────
+    async openActivity(c) {
+      this.activeCompany = c;
+      this.activities = [];
+      this.activityTab = 'all';
+      this.newActContent = '';
+      this.activityOpen = true;
+      this.activityLoading = true;
+      const { data } = await sb.from('onboarding_activities')
+        .select('*').eq('client_id', c.id).order('created_at', { ascending: false });
+      this.activities = data || [];
+      this.activityLoading = false;
+    },
+
+    get filteredActivities() {
+      if (this.activityTab === 'all') return this.activities;
+      return this.activities.filter(function(a) { return a.type === this.activityTab; }.bind(this));
+    },
+
+    tabCount(key) {
+      if (key === 'all') return this.activities.length;
+      return this.activities.filter(function(a) { return a.type === key; }).length;
+    },
+
+    async addActivity() {
+      var content = this.newActContent.trim();
+      if (!content) return;
+      this.activityAdding = true;
+      var payload = { client_id: this.activeCompany.id, type: this.newActType, content: content };
+      var self = this;
+      var resp = await sb.from('onboarding_activities').insert(payload).select().single();
+      this.activityAdding = false;
+      if (resp.error) { alert('Failed: ' + resp.error.message); return; }
+      this.activities.unshift(resp.data);
+      this.newActContent = '';
+      // update badge count
+      if (this.newActType === 'todo') {
+        this.todoCounts[this.activeCompany.id] = (this.todoCounts[this.activeCompany.id] || 0) + 1;
+      }
+    },
+
+    async toggleTodo(a) {
+      var done = !a.is_done;
+      await sb.from('onboarding_activities').update({ is_done: done, updated_at: new Date().toISOString() }).eq('id', a.id);
+      a.is_done = done;
+      // update badge
+      var delta = done ? -1 : 1;
+      this.todoCounts[this.activeCompany.id] = Math.max(0, (this.todoCounts[this.activeCompany.id] || 0) + delta);
+    },
+
+    async deleteActivity(a) {
+      if (!confirm('Delete this item?')) return;
+      await sb.from('onboarding_activities').delete().eq('id', a.id);
+      this.activities = this.activities.filter(function(x) { return x.id !== a.id; });
+      if (a.type === 'todo' && !a.is_done) {
+        this.todoCounts[this.activeCompany.id] = Math.max(0, (this.todoCounts[this.activeCompany.id] || 0) - 1);
+      }
+    },
+
+    typeColor(type) {
+      return { note:'bg-gray-400', request:'bg-blue-500', message:'bg-indigo-500', update:'bg-green-500', todo:'bg-amber-400' }[type] || 'bg-gray-300';
+    },
+
+    typeBadge(type) {
+      return { note:'bg-gray-100 text-gray-600', request:'bg-blue-50 text-blue-700', message:'bg-indigo-50 text-indigo-700', update:'bg-green-50 text-green-700', todo:'bg-amber-50 text-amber-700' }[type] || 'bg-gray-100 text-gray-500';
     },
 
     copyCode(code) {
