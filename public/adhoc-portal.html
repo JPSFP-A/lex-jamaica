@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JW Business Solutions — Work Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{navy:{50:'#f0f4ff',100:'#e0e8f7',600:'#2d4a8a',700:'#1e3570',800:'#152860',900:'#0d1c47'},gold:{300:'#f0d080',400:'#e8c040',500:'#c8a030',600:'#a88020'}}}}}</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <style>[x-cloak]{display:none!important}</style>
+</head>
+<body class="min-h-screen bg-gray-100 font-sans" x-data="adhocApp()" x-init="init()" x-cloak>
+
+  <!-- HEADER -->
+  <header class="bg-navy-900 text-white sticky top-0 z-40 shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-gold-500 rounded-lg flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-navy-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <div>
+          <p class="text-xs text-navy-100 font-medium uppercase tracking-wider" x-text="companyName || 'Work Portal'"></p>
+          <h1 class="text-base font-bold leading-tight">Work Requests</h1>
+        </div>
+      </div>
+      <button @click="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Logout</button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Submit new request -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Submit a New Request</h2>
+      <div class="space-y-3">
+        <input type="text" x-model="newTitle" placeholder="Request title / what do you need?"
+          class="block w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-navy-600 outline-none" />
+        <textarea x-model="newDesc" rows="3" placeholder="Describe the work in detail (optional)…"
+          class="block w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-navy-600 outline-none resize-none"></textarea>
+        <div class="flex gap-3 flex-wrap">
+          <select x-model="newPriority" class="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none">
+            <option value="low">Low priority</option>
+            <option value="medium">Medium priority</option>
+            <option value="high">High priority</option>
+            <option value="urgent">Urgent</option>
+          </select>
+          <input type="date" x-model="newDue" class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          <button @click="submitRequest()" :disabled="!newTitle.trim() || submitting"
+            class="px-5 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg">
+            <span x-text="submitting ? 'Submitting…' : 'Submit Request'"></span>
+          </button>
+        </div>
+      </div>
+      <div x-show="submitError" class="mt-2 text-sm text-red-600" x-text="submitError"></div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid grid-cols-4 gap-3">
+      <template x-for="col in statusCols" :key="col.key">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+          <p class="text-2xl font-bold" :class="col.textClass" x-text="tickets.filter(t=>t.status===col.key).length"></p>
+          <p class="text-xs text-gray-500 mt-1" x-text="col.label"></p>
+        </div>
+      </template>
+    </div>
+
+    <!-- Ticket board -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+        <h2 class="font-semibold text-gray-900">All Requests</h2>
+        <div class="flex gap-1 ml-auto">
+          <template x-for="col in [{key:'all',label:'All'},...statusCols]" :key="col.key">
+            <button @click="filterStatus=col.key"
+              class="px-2.5 py-1 text-xs rounded-lg font-medium transition-colors"
+              :class="filterStatus===col.key ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+              x-text="col.label"></button>
+          </template>
+        </div>
+      </div>
+      <div x-show="loading" class="py-16 text-center text-sm text-gray-400">Loading…</div>
+      <div x-show="!loading && filteredTickets.length===0" class="py-16 text-center text-sm text-gray-400">No requests yet.</div>
+      <div class="divide-y divide-gray-100">
+        <template x-for="t in filteredTickets" :key="t.id">
+          <div class="px-5 py-4">
+            <div class="flex items-start gap-3">
+              <!-- Priority indicator -->
+              <div class="w-1.5 h-full min-h-8 rounded-full shrink-0 mt-1"
+                :class="{urgent:'bg-red-500',high:'bg-orange-400',medium:'bg-amber-400',low:'bg-gray-300'}[t.priority]||'bg-gray-300'"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2 flex-wrap">
+                  <p class="font-semibold text-gray-900" x-text="t.title"></p>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      :class="{urgent:'bg-red-100 text-red-700',high:'bg-orange-100 text-orange-700',medium:'bg-amber-100 text-amber-700',low:'bg-gray-100 text-gray-500'}[t.priority]||'bg-gray-100 text-gray-500'"
+                      x-text="t.priority.charAt(0).toUpperCase()+t.priority.slice(1)"></span>
+                    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                      :class="{open:'bg-blue-100 text-blue-700',in_progress:'bg-amber-100 text-amber-700',done:'bg-green-100 text-green-700',cancelled:'bg-gray-100 text-gray-500'}[t.status]||'bg-gray-100 text-gray-500'"
+                      x-text="{open:'Open',in_progress:'In Progress',done:'Done',cancelled:'Cancelled'}[t.status]||t.status"></span>
+                  </div>
+                </div>
+                <p x-show="t.description" class="text-sm text-gray-600 mt-1" x-text="t.description"></p>
+                <div class="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                  <span x-text="'Submitted ' + formatDate(t.created_at)"></span>
+                  <span x-show="t.due_date" x-text="'Due ' + formatDate(t.due_date)"></span>
+                  <span x-show="t.est_hours" x-text="'Est. ' + t.est_hours + 'h'"></span>
+                  <span x-show="t.actual_hours" class="text-navy-600 font-medium" x-text="'Actual ' + t.actual_hours + 'h'"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+  </main>
+
+<script>
+const sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON__);
+
+function adhocApp() {
+  return {
+    clientId: null, companyName: '', loading: true,
+    tickets: [], filterStatus: 'all',
+    newTitle: '', newDesc: '', newPriority: 'medium', newDue: '',
+    submitting: false, submitError: '',
+    statusCols: [
+      { key: 'open',        label: 'Open',        textClass: 'text-blue-600'  },
+      { key: 'in_progress', label: 'In Progress',  textClass: 'text-amber-500' },
+      { key: 'done',        label: 'Done',         textClass: 'text-green-600' },
+      { key: 'cancelled',   label: 'Cancelled',    textClass: 'text-gray-400'  },
+    ],
+
+    async init() {
+      this.clientId = sessionStorage.getItem('ob_client_id');
+      this.companyName = sessionStorage.getItem('ob_company_name') || '';
+      if (!this.clientId) { window.location.href = '/onboarding-login.html'; return; }
+      await this.loadTickets();
+      this.loading = false;
+    },
+
+    async loadTickets() {
+      const { data } = await sb.from('adhoc_tickets')
+        .select('*').eq('client_id', this.clientId).order('created_at', { ascending: false });
+      this.tickets = data || [];
+    },
+
+    get filteredTickets() {
+      if (this.filterStatus === 'all') return this.tickets;
+      return this.tickets.filter(t => t.status === this.filterStatus);
+    },
+
+    async submitRequest() {
+      this.submitError = '';
+      if (!this.newTitle.trim()) return;
+      this.submitting = true;
+      const payload = {
+        client_id: this.clientId,
+        title: this.newTitle.trim(),
+        description: this.newDesc.trim() || null,
+        priority: this.newPriority,
+        status: 'open',
+      };
+      if (this.newDue) payload.due_date = this.newDue;
+      const { data, error } = await sb.from('adhoc_tickets').insert(payload).select().single();
+      this.submitting = false;
+      if (error) { this.submitError = error.message; return; }
+      this.tickets.unshift(data);
+      this.newTitle = ''; this.newDesc = ''; this.newPriority = 'medium'; this.newDue = '';
+    },
+
+    formatDate(ts) {
+      if (!ts) return '';
+      return new Date(ts).toLocaleDateString('en-JM', { day: 'numeric', month: 'short', year: 'numeric' });
+    },
+    logout() { sessionStorage.clear(); window.location.href = '/onboarding-login.html'; },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

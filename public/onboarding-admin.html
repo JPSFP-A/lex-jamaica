@@ -21,7 +21,7 @@
           <svg class="w-7 h-7 text-navy-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         </div>
         <h1 class="text-xl font-bold text-white">Admin Access</h1>
-        <p class="text-sm text-gray-400 mt-1">Enter your admin PIN</p>
+        <p class="text-sm text-gray-400 mt-1">JW Business Solutions</p>
       </div>
       <div class="bg-white rounded-2xl p-6 space-y-4">
         <input type="password" x-model="pin" @keydown.enter="checkPin()" maxlength="20"
@@ -37,106 +37,183 @@
   <!-- Admin Dashboard -->
   <div x-show="authed" x-cloak>
     <header class="bg-navy-900 text-white shadow-lg">
-      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 bg-gold-500 rounded-lg flex items-center justify-center">
             <svg class="w-4 h-4 text-navy-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
           </div>
-          <span class="font-bold">Admin Dashboard</span>
+          <span class="font-bold">JW Business Solutions — Admin</span>
         </div>
         <button @click="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Sign out</button>
       </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-6">
 
-      <!-- Add Company -->
+      <!-- Add Client -->
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 class="font-semibold text-gray-900 mb-4">Add New Company</h2>
-        <div class="flex gap-3 flex-wrap">
-          <input x-model="newName" type="text" placeholder="Company name"
-            class="flex-1 min-w-[180px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
-          <input x-model="newCode" type="text" placeholder="Access code"
-            class="w-36 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
-          <select x-model="newTemplate"
-            class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none bg-white">
-            <option value="general">General</option>
-            <option value="law_firm">Law Firm</option>
-            <option value="construction_rental">Construction &amp; Rental</option>
-          </select>
-          <input x-model="newProposalUrl" type="url" placeholder="Proposal URL (optional)"
-            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+        <h2 class="font-semibold text-gray-900 mb-4">Add New Client</h2>
+        <div class="flex gap-3 flex-wrap items-end">
+          <div class="flex-1 min-w-[160px]">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Company Name</label>
+            <input x-model="newName" type="text" placeholder="Company name"
+              class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          </div>
+          <div class="w-36">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Access Code</label>
+            <input x-model="newCode" type="text" placeholder="Code"
+              class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          </div>
+          <div class="w-44">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Service Type</label>
+            <select x-model="newServiceType" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none">
+              <option value="implementation">Implementation</option>
+              <option value="bookkeeping">Bookkeeping</option>
+              <option value="training">Training</option>
+              <option value="adhoc">Ad Hoc</option>
+            </select>
+          </div>
+          <div x-show="newServiceType==='implementation'" class="w-48">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Template</label>
+            <select x-model="newTemplate" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none">
+              <option value="general">General</option>
+              <option value="law_firm">Law Firm</option>
+              <option value="construction_rental">Construction &amp; Rental</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Proposal URL (optional)</label>
+            <input x-model="newProposalUrl" type="url" placeholder="https://…"
+              class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          </div>
+          <div class="w-44">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Partner Name (optional)</label>
+            <input x-model="newPartnerName" type="text" placeholder="Partner firm name"
+              class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          </div>
           <button @click="addCompany()" :disabled="!newName || !newCode || adding"
-            class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+            class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg self-end">
             <span x-text="adding ? 'Adding...' : '+ Add'"></span>
           </button>
         </div>
         <div x-show="addError" class="mt-2 text-sm text-red-600" x-text="addError"></div>
       </div>
 
+      <!-- Summary stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+          <p class="text-2xl font-bold text-navy-800" x-text="companies.length"></p>
+          <p class="text-xs text-gray-500 mt-1">Total Clients</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+          <p class="text-2xl font-bold text-blue-600" x-text="companies.filter(c=>c.service_type==='implementation').length"></p>
+          <p class="text-xs text-gray-500 mt-1">Implementation</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+          <p class="text-2xl font-bold text-green-600" x-text="companies.filter(c=>c.service_type==='bookkeeping').length"></p>
+          <p class="text-xs text-gray-500 mt-1">Bookkeeping</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+          <p class="text-2xl font-bold text-purple-600" x-text="companies.filter(c=>c.service_type==='training'||c.service_type==='adhoc').length"></p>
+          <p class="text-xs text-gray-500 mt-1">Training / Ad Hoc</p>
+        </div>
+      </div>
+
       <!-- Companies List -->
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 class="font-semibold text-gray-900">Companies</h2>
+          <h2 class="font-semibold text-gray-900">Clients</h2>
           <span class="text-xs text-gray-400" x-text="companies.length + ' total'"></span>
         </div>
         <template x-if="companies.length === 0">
-          <div class="px-5 py-10 text-center text-sm text-gray-400">No companies yet. Add one above.</div>
+          <div class="px-5 py-10 text-center text-sm text-gray-400">No clients yet. Add one above.</div>
         </template>
         <div class="divide-y divide-gray-100">
           <template x-for="c in companies" :key="c.id">
             <div class="px-5 py-4">
               <div class="flex items-start justify-between gap-4 flex-wrap">
                 <div class="flex-1 min-w-0">
+                  <!-- Name + badges -->
                   <div class="flex items-center gap-2 flex-wrap">
                     <p class="text-sm font-semibold text-gray-900" x-text="c.company_name"></p>
-                    <span class="text-xs px-1.5 py-0.5 rounded font-medium"
+                    <!-- Service type badge -->
+                    <span class="text-xs px-2 py-0.5 rounded font-semibold"
                       :class="{
-                        'bg-blue-50 text-blue-700':   c.template === 'law_firm',
-                        'bg-orange-50 text-orange-700': c.template === 'construction_rental',
-                        'bg-gray-100 text-gray-500':  !c.template || c.template === 'general'
+                        'bg-navy-100 text-navy-800':   c.service_type==='implementation',
+                        'bg-green-100 text-green-700': c.service_type==='bookkeeping',
+                        'bg-purple-100 text-purple-700': c.service_type==='training',
+                        'bg-orange-100 text-orange-700': c.service_type==='adhoc',
                       }"
-                      x-text="c.template === 'law_firm' ? 'Law Firm' : c.template === 'construction_rental' ? 'Construction & Rental' : 'General'">
-                    </span>
+                      x-text="{implementation:'Implementation',bookkeeping:'Bookkeeping',training:'Training',adhoc:'Ad Hoc'}[c.service_type]||c.service_type"></span>
+                    <!-- Template badge (implementation only) -->
+                    <span x-show="c.service_type==='implementation'" class="text-xs px-1.5 py-0.5 rounded font-medium"
+                      :class="{
+                        'bg-blue-50 text-blue-600':   c.template==='law_firm',
+                        'bg-amber-50 text-amber-700': c.template==='construction_rental',
+                        'bg-gray-100 text-gray-500':  !c.template||c.template==='general'
+                      }"
+                      x-text="c.template==='law_firm'?'Law Firm':c.template==='construction_rental'?'Construction & Rental':'General'"></span>
+                    <span x-show="c.partner_name" class="text-xs px-1.5 py-0.5 rounded bg-gold-50 text-gold-700 font-medium" x-text="c.partner_name"></span>
                     <span x-show="!c.is_active" class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">disabled</span>
                   </div>
+                  <!-- Login code -->
                   <div class="flex items-center gap-3 mt-1.5 flex-wrap">
                     <div class="flex items-center gap-1.5">
-                      <span class="text-xs text-gray-400">Login code:</span>
+                      <span class="text-xs text-gray-400">Code:</span>
                       <span class="font-mono text-sm font-bold text-navy-800 bg-navy-50 border border-navy-100 px-2 py-0.5 rounded tracking-widest select-all" x-text="c.access_code"></span>
-                      <button @click="copyCode(c.access_code)" title="Copy code"
-                        class="text-gray-400 hover:text-navy-700 transition-colors">
+                      <button @click="copyCode(c)" title="Copy code" class="text-gray-400 hover:text-navy-700 transition-colors">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                       </button>
-                      <span x-show="copiedId === c.id" class="text-xs text-green-600 font-medium">Copied!</span>
+                      <span x-show="copiedId===c.id" class="text-xs text-green-600 font-medium">Copied!</span>
                     </div>
                     <a x-show="c.proposal_url" :href="c.proposal_url" target="_blank" rel="noopener"
-                      class="text-xs text-gold-600 hover:text-navy-700 font-medium underline">View Proposal ↗</a>
+                      class="text-xs text-gold-600 hover:text-navy-700 font-medium underline">Proposal ↗</a>
                   </div>
-                  <div class="flex items-center gap-2 mt-2">
+                  <!-- Progress (implementation only) -->
+                  <div x-show="c.service_type==='implementation'" class="flex items-center gap-2 mt-2">
                     <div class="w-36 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div class="h-full bg-navy-600 rounded-full transition-all" :style="'width:' + progress(c.id) + '%'"></div>
+                      <div class="h-full bg-navy-600 rounded-full transition-all" :style="'width:' + progress(c.id, c) + '%'"></div>
                     </div>
-                    <span class="text-xs text-gray-500" x-text="(responseCounts[c.id] || 0) + ' / ' + totalItems(c) + ' complete (' + progress(c.id, c) + '%)'"></span>
+                    <span class="text-xs text-gray-500" x-text="(responseCounts[c.id]||0) + '/' + totalItems(c) + ' items (' + progress(c.id, c) + '%)'"></span>
+                  </div>
+                  <!-- Bookkeeping: period summary -->
+                  <div x-show="c.service_type==='bookkeeping'" class="mt-1.5">
+                    <span class="text-xs text-gray-400" x-text="(todoCounts[c.id]||0) + ' pending todos'"></span>
                   </div>
                 </div>
+
+                <!-- Action buttons -->
                 <div class="flex items-center gap-2 flex-wrap shrink-0">
-                  <!-- Activity button with pending-todo badge -->
+                  <!-- Activity (all types) -->
                   <button @click="openActivity(c)" class="relative px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 text-xs font-semibold rounded-lg">
                     Activity
-                    <span x-show="(todoCounts[c.id] || 0) > 0"
-                      class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold leading-none"
+                    <span x-show="(todoCounts[c.id]||0)>0"
+                      class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold"
                       x-text="todoCounts[c.id]"></span>
                   </button>
-                  <button @click="openFiles(c)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg">
-                    Files
-                  </button>
-                  <button @click="openCustomize(c)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg">
-                    Customize
-                  </button>
-                  <button @click="viewCompany(c)" class="px-3 py-1.5 bg-navy-50 hover:bg-navy-100 text-navy-800 text-xs font-semibold rounded-lg">
-                    Open
-                  </button>
+                  <!-- Implementation-specific -->
+                  <template x-if="c.service_type==='implementation'">
+                    <div class="flex gap-2">
+                      <button @click="openFiles(c)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg">Files</button>
+                      <button @click="openCustomize(c)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg">Customize</button>
+                      <button @click="openGantt(c)" class="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 text-xs font-semibold rounded-lg">Gantt</button>
+                      <button @click="openCOA(c)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-lg">COA</button>
+                    </div>
+                  </template>
+                  <!-- Bookkeeping-specific -->
+                  <template x-if="c.service_type==='bookkeeping'">
+                    <button @click="openBookkeeping(c)" class="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold rounded-lg">Periods</button>
+                  </template>
+                  <!-- Training-specific -->
+                  <template x-if="c.service_type==='training'">
+                    <button @click="openTraining(c)" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold rounded-lg">Training</button>
+                  </template>
+                  <!-- Adhoc-specific -->
+                  <template x-if="c.service_type==='adhoc'">
+                    <button @click="openTickets(c)" class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold rounded-lg">Tickets</button>
+                  </template>
+                  <!-- All types -->
+                  <button @click="viewCompany(c)" class="px-3 py-1.5 bg-navy-50 hover:bg-navy-100 text-navy-800 text-xs font-semibold rounded-lg">Open</button>
                   <button @click="toggleActive(c)"
                     :class="c.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'"
                     class="px-3 py-1.5 text-xs font-semibold rounded-lg"
@@ -153,20 +230,16 @@
   <!-- ══ ACTIVITY MODAL ══ -->
   <div x-show="activityOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:88vh">
-
-      <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
         <div>
-          <h2 class="font-bold text-gray-900" x-text="(activeCompany ? activeCompany.company_name : '') + ' — Activity'"></h2>
-          <p class="text-xs text-gray-400 mt-0.5" x-text="activities.length + ' item' + (activities.length !== 1 ? 's' : '')"></p>
+          <h2 class="font-bold text-gray-900" x-text="(activeCompany?activeCompany.company_name:'') + ' — Activity'"></h2>
+          <p class="text-xs text-gray-400 mt-0.5" x-text="activities.length + ' item' + (activities.length!==1?'s':'')"></p>
         </div>
-        <button @click="activityOpen = false" class="p-2 hover:bg-gray-100 rounded-lg">
+        <button @click="activityOpen=false" class="p-2 hover:bg-gray-100 rounded-lg">
           <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-
-      <!-- Add new entry -->
-      <div class="px-6 py-4 border-b border-gray-100 shrink-0 space-y-2">
+      <div class="px-6 py-4 border-b border-gray-100 shrink-0">
         <div class="flex gap-2">
           <select x-model="newActType" class="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none shrink-0">
             <option value="todo">To-do</option>
@@ -178,71 +251,54 @@
           <input x-model="newActContent" type="text" placeholder="Enter content and press Enter…"
             @keydown.enter="addActivity()"
             class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
-          <button @click="addActivity()" :disabled="!newActContent.trim() || activityAdding"
-            class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg shrink-0">
-            Add
-          </button>
+          <button @click="addActivity()" :disabled="!newActContent.trim()||activityAdding"
+            class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg shrink-0">Add</button>
         </div>
       </div>
-
-      <!-- Tab strip -->
       <div class="px-6 pt-3 pb-0 flex gap-1 shrink-0 border-b border-gray-100 overflow-x-auto">
         <template x-for="tab in activityTabs" :key="tab.key">
-          <button @click="activityTab = tab.key"
+          <button @click="activityTab=tab.key"
             class="px-3 py-2 text-xs font-semibold rounded-t-lg whitespace-nowrap transition-colors border-b-2"
-            :class="activityTab === tab.key
-              ? 'border-navy-700 text-navy-800 bg-navy-50'
-              : 'border-transparent text-gray-400 hover:text-gray-700'">
+            :class="activityTab===tab.key ? 'border-navy-700 text-navy-800 bg-navy-50' : 'border-transparent text-gray-400 hover:text-gray-700'">
             <span x-text="tab.label"></span>
-            <span x-show="tabCount(tab.key) > 0"
-              class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
-              :class="tab.key === 'todo' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'"
+            <span x-show="tabCount(tab.key)>0" class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
+              :class="tab.key==='todo' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'"
               x-text="tabCount(tab.key)"></span>
           </button>
         </template>
       </div>
-
-      <!-- Activity list -->
       <div class="overflow-y-auto flex-1 px-6 py-4">
         <div x-show="activityLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
-        <div x-show="!activityLoading && filteredActivities.length === 0" class="py-10 text-center text-sm text-gray-400">
-          Nothing here yet.
-        </div>
+        <div x-show="!activityLoading&&filteredActivities.length===0" class="py-10 text-center text-sm text-gray-400">Nothing here yet.</div>
         <div class="space-y-2">
           <template x-for="a in filteredActivities" :key="a.id">
             <div class="flex gap-3 p-3 rounded-xl border transition-colors"
-              :class="a.type === 'todo' && a.is_done
-                ? 'border-gray-100 bg-gray-50 opacity-60'
-                : 'border-gray-200 bg-white'">
-
-              <!-- Todo checkbox / type dot -->
+              :class="a.type==='todo'&&a.is_done ? 'border-gray-100 bg-gray-50 opacity-60' : 'border-gray-200 bg-white'">
               <div class="shrink-0 mt-0.5">
-                <template x-if="a.type === 'todo'">
+                <template x-if="a.type==='todo'">
                   <button @click="toggleTodo(a)"
                     class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
                     :class="a.is_done ? 'border-green-500 bg-green-500' : 'border-gray-300 hover:border-navy-500'">
                     <svg x-show="a.is_done" class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                   </button>
                 </template>
-                <template x-if="a.type !== 'todo'">
+                <template x-if="a.type!=='todo'">
                   <div class="w-2 h-2 rounded-full mt-1.5" :class="typeColor(a.type)"></div>
                 </template>
               </div>
-
-              <!-- Content -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between gap-2">
                   <p class="text-sm text-gray-800 leading-snug"
-                    :class="a.type === 'todo' && a.is_done ? 'line-through text-gray-400' : ''"
+                    :class="a.type==='todo'&&a.is_done ? 'line-through text-gray-400' : ''"
                     x-text="a.content"></p>
                   <button @click="deleteActivity(a)" class="shrink-0 text-gray-300 hover:text-red-400 transition-colors mt-0.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                   </button>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
-                  <span class="text-xs font-semibold px-1.5 py-0.5 rounded" :class="typeBadge(a.type)" x-text="a.type.charAt(0).toUpperCase() + a.type.slice(1)"></span>
+                  <span class="text-xs font-semibold px-1.5 py-0.5 rounded" :class="typeBadge(a.type)" x-text="a.type.charAt(0).toUpperCase()+a.type.slice(1)"></span>
                   <span class="text-xs text-gray-400" x-text="formatDate(a.created_at)"></span>
-                  <span x-show="a.type === 'todo' && a.is_done" class="text-xs text-green-600 font-medium">Done</span>
+                  <span x-show="a.type==='todo'&&a.is_done" class="text-xs text-green-600 font-medium">Done</span>
                 </div>
               </div>
             </div>
@@ -257,21 +313,17 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:85vh">
       <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
         <div>
-          <h2 class="font-bold text-gray-900" x-text="(activeCompany ? activeCompany.company_name : '') + ' — Uploaded Files'"></h2>
-          <p class="text-xs text-gray-400 mt-0.5" x-text="filesList.length + ' file' + (filesList.length !== 1 ? 's' : '')"></p>
+          <h2 class="font-bold text-gray-900" x-text="(activeCompany?activeCompany.company_name:'') + ' — Files'"></h2>
+          <p class="text-xs text-gray-400 mt-0.5" x-text="filesList.length + ' file' + (filesList.length!==1?'s':'')"></p>
         </div>
-        <button @click="filesOpen = false" class="p-2 hover:bg-gray-100 rounded-lg">
-          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
+        <button @click="filesOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
       </div>
       <div class="overflow-y-auto flex-1 px-6 py-4">
-        <div x-show="filesLoading" class="py-10 text-center text-sm text-gray-400">Loading files…</div>
-        <div x-show="!filesLoading && filesList.length === 0" class="py-10 text-center text-sm text-gray-400">
-          No files uploaded yet for this company.
-        </div>
-        <template x-if="!filesLoading && filesList.length > 0">
+        <div x-show="filesLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
+        <div x-show="!filesLoading&&filesList.length===0" class="py-10 text-center text-sm text-gray-400">No files uploaded yet.</div>
+        <template x-if="!filesLoading&&filesList.length>0">
           <div class="space-y-1">
-            <template x-for="group in filesGrouped" :key="group.sectionId + '-' + group.itemId">
+            <template x-for="group in filesGrouped" :key="group.sectionId+'-'+group.itemId">
               <div>
                 <div x-show="group.isFirstInSection" class="pt-4 pb-1 first:pt-0">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wider" x-text="group.sectionTitle"></p>
@@ -279,17 +331,12 @@
                 <p class="text-xs font-semibold text-gray-600 mt-2 mb-1.5" x-text="group.itemTitle"></p>
                 <template x-for="f in group.files" :key="f.id">
                   <div class="flex items-center gap-3 p-3 mb-1 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <svg class="w-7 h-7 text-navy-400 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-                    </svg>
+                    <svg class="w-7 h-7 text-navy-400 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
                     <div class="flex-1 min-w-0">
                       <p class="text-sm font-medium text-gray-900 truncate" x-text="f.file_name"></p>
                       <p class="text-xs text-gray-400" x-text="formatBytes(f.file_size_bytes) + ' · ' + formatDate(f.uploaded_at)"></p>
                     </div>
-                    <button @click="downloadFile(f)"
-                      class="shrink-0 px-3 py-1.5 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg whitespace-nowrap">
-                      Download
-                    </button>
+                    <button @click="downloadFile(f)" class="shrink-0 px-3 py-1.5 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg">Download</button>
                   </div>
                 </template>
               </div>
@@ -305,12 +352,10 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:85vh">
       <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
         <div>
-          <h2 class="font-bold text-gray-900" x-text="'Customize — ' + (activeCompany ? activeCompany.company_name : '')"></h2>
-          <p class="text-xs text-gray-400 mt-0.5">Rename items, update descriptions, or hide items not relevant to this company</p>
+          <h2 class="font-bold text-gray-900" x-text="'Customize — '+(activeCompany?activeCompany.company_name:'')"></h2>
+          <p class="text-xs text-gray-400 mt-0.5">Rename, update descriptions, or hide items per client</p>
         </div>
-        <button @click="customizeOpen = false" class="p-2 hover:bg-gray-100 rounded-lg">
-          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
+        <button @click="customizeOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
       </div>
       <div class="overflow-y-auto flex-1 px-6 py-4">
         <template x-for="item in customizeItems" :key="item.id">
@@ -330,15 +375,13 @@
                       class="block w-full rounded border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 focus:border-navy-500 outline-none resize-none disabled:bg-gray-50 disabled:text-gray-400"
                       :placeholder="item.defaultDescription"></textarea>
                   </template>
-                  <button x-show="item.title !== item.defaultTitle || item.description !== item.defaultDescription"
-                    @click="item.title = item.defaultTitle; item.description = item.defaultDescription"
-                    class="text-xs text-gray-400 hover:text-navy-700 underline">
-                    Reset to default
-                  </button>
+                  <button x-show="item.title!==item.defaultTitle||item.description!==item.defaultDescription"
+                    @click="item.title=item.defaultTitle; item.description=item.defaultDescription"
+                    class="text-xs text-gray-400 hover:text-navy-700 underline">Reset to default</button>
                 </div>
                 <label class="shrink-0 flex flex-col items-center gap-1 pt-0.5 cursor-pointer select-none">
                   <span class="text-xs text-gray-400">Hide</span>
-                  <div @click="item.hidden = !item.hidden"
+                  <div @click="item.hidden=!item.hidden"
                     class="w-10 h-5 rounded-full transition-colors flex items-center px-0.5 cursor-pointer"
                     :class="item.hidden ? 'bg-gray-400' : 'bg-green-500'">
                     <div class="w-4 h-4 bg-white rounded-full shadow transition-transform"
@@ -351,18 +394,427 @@
         </template>
       </div>
       <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between shrink-0">
-        <button @click="resetAllCustomize()" class="text-sm text-gray-400 hover:text-red-600 transition-colors">
-          Reset all to defaults
-        </button>
+        <button @click="resetAllCustomize()" class="text-sm text-gray-400 hover:text-red-600 transition-colors">Reset all</button>
         <div class="flex gap-2">
-          <button @click="customizeOpen = false" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg hover:bg-gray-50">
-            Cancel
-          </button>
+          <button @click="customizeOpen=false" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg hover:bg-gray-50">Cancel</button>
           <button @click="saveCustomize()" :disabled="customizeSaving"
             class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
-            <span x-text="customizeSaving ? 'Saving...' : 'Save Changes'"></span>
+            <span x-text="customizeSaving?'Saving...':'Save Changes'"></span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GANTT MODAL ══ -->
+  <div x-show="ganttOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" style="max-height:90vh">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-bold text-gray-900" x-text="'Gantt — '+(activeCompany?activeCompany.company_name:'')"></h2>
+          <p class="text-xs text-gray-400 mt-0.5">Set target dates for each phase. Clients see their timeline.</p>
+        </div>
+        <button @click="ganttOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+        <div x-show="ganttLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
+        <template x-for="phase in ganttPhases" :key="phase.section_id">
+          <div class="border border-gray-200 rounded-xl p-4">
+            <div class="flex items-start gap-4 flex-wrap">
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-gray-900" x-text="phase.name"></p>
+                <p class="text-xs text-gray-400 mt-0.5" x-text="phase.completedItems + '/' + phase.totalItems + ' items complete'"></p>
+              </div>
+              <div class="flex gap-3 items-center flex-wrap shrink-0">
+                <div>
+                  <label class="block text-xs text-gray-400 mb-0.5">Start</label>
+                  <input type="date" x-model="phase.target_start"
+                    class="rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-navy-600 outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-0.5">Target End</label>
+                  <input type="date" x-model="phase.target_end"
+                    class="rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-navy-600 outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-0.5">Actual End</label>
+                  <input type="date" x-model="phase.actual_end"
+                    class="rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-navy-600 outline-none" />
+                </div>
+              </div>
+            </div>
+            <!-- Gantt bar -->
+            <div x-show="phase.target_start && phase.target_end" class="mt-3">
+              <div class="relative h-5 bg-gray-100 rounded-full overflow-hidden">
+                <div class="absolute inset-y-0 rounded-full transition-all"
+                  :class="phase.actual_end ? 'bg-green-500' : 'bg-navy-500'"
+                  :style="ganttBarStyle(phase)"></div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-400 mt-1">
+                <span x-text="formatDateShort(phase.target_start)"></span>
+                <span x-show="phase.actual_end" class="text-green-600 font-medium">Completed <span x-text="formatDateShort(phase.actual_end)"></span></span>
+                <span x-text="formatDateShort(phase.target_end)"></span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 shrink-0">
+        <button @click="ganttOpen=false" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg hover:bg-gray-50">Cancel</button>
+        <button @click="saveGantt()" :disabled="ganttSaving"
+          class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+          <span x-text="ganttSaving?'Saving...':'Save Dates'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ COA MODAL ══ -->
+  <div x-show="coaOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:90vh">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-bold text-gray-900" x-text="'Chart of Accounts — '+(activeCompany?activeCompany.company_name:'')"></h2>
+          <p class="text-xs text-gray-400 mt-0.5">Accounts highlighted as sections are completed</p>
+        </div>
+        <button @click="coaOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="overflow-y-auto flex-1 px-6 py-4">
+        <div x-show="coaLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
+        <template x-if="!coaLoading">
+          <div class="space-y-4">
+            <template x-for="group in coaGroups" :key="group.label">
+              <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2" x-text="group.label"></p>
+                <div class="space-y-1">
+                  <template x-for="acct in group.accounts" :key="acct.code">
+                    <div class="flex items-center gap-3 p-2.5 rounded-lg border transition-colors"
+                      :class="coaUnlocked.has(acct.code) ? 'border-green-200 bg-green-50' : 'border-gray-100 bg-white'">
+                      <span class="font-mono text-xs font-bold w-12 shrink-0"
+                        :class="coaUnlocked.has(acct.code) ? 'text-green-700' : 'text-gray-400'"
+                        x-text="acct.code"></span>
+                      <span class="text-sm flex-1"
+                        :class="coaUnlocked.has(acct.code) ? 'text-green-900 font-medium' : 'text-gray-600'"
+                        x-text="acct.name"></span>
+                      <span x-show="coaUnlocked.has(acct.code)" class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">Active</span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+      <div class="px-6 py-3 border-t border-gray-100 shrink-0 flex items-center gap-3 text-xs text-gray-400">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-200 inline-block"></span> Active (section complete)</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-gray-100 inline-block"></span> Not yet active</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ BOOKKEEPING MODAL ══ -->
+  <div x-show="bkOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" style="max-height:90vh">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-bold text-gray-900" x-text="'Bookkeeping — '+(activeCompany?activeCompany.company_name:'')"></h2>
+          <p class="text-xs text-gray-400 mt-0.5">Manage periods and task status</p>
+        </div>
+        <button @click="bkOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <!-- Add period -->
+      <div class="px-6 py-3 border-b border-gray-100 shrink-0">
+        <div class="flex gap-2 items-end flex-wrap">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Year</label>
+            <input type="number" x-model="bkNewYear" placeholder="2025" class="w-24 rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:border-navy-600 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Month</label>
+            <select x-model="bkNewMonth" class="rounded-lg border border-gray-200 px-2 py-1.5 text-sm bg-white focus:border-navy-600 outline-none">
+              <template x-for="(m,i) in bkMonths" :key="i">
+                <option :value="i+1" x-text="m"></option>
+              </template>
+            </select>
+          </div>
+          <button @click="addPeriod()" :disabled="bkAdding" class="px-4 py-2 bg-teal-700 hover:bg-teal-600 disabled:opacity-40 text-white text-sm font-semibold rounded-lg">
+            <span x-text="bkAdding?'Adding...':'+ Add Period'"></span>
+          </button>
+        </div>
+      </div>
+      <div class="overflow-y-auto flex-1">
+        <div x-show="bkLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
+        <div x-show="!bkLoading&&bkPeriods.length===0" class="py-10 text-center text-sm text-gray-400">No periods yet. Add one above.</div>
+        <!-- Period list -->
+        <div x-show="!bkSelectedPeriod" class="divide-y divide-gray-100">
+          <template x-for="p in bkPeriods" :key="p.id">
+            <div class="px-6 py-3 flex items-center gap-4 hover:bg-gray-50 cursor-pointer" @click="selectPeriod(p)">
+              <div class="w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0"
+                :class="p.status==='complete'?'bg-green-100':p.status==='in_progress'?'bg-amber-100':'bg-gray-100'">
+                <span class="text-xs font-bold" :class="p.status==='complete'?'text-green-700':p.status==='in_progress'?'text-amber-700':'text-gray-500'"
+                  x-text="bkMonths[(p.period_month||1)-1].slice(0,3)"></span>
+                <span class="text-xs" :class="p.status==='complete'?'text-green-600':p.status==='in_progress'?'text-amber-600':'text-gray-400'" x-text="p.period_year"></span>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium text-sm text-gray-900" x-text="bkMonths[(p.period_month||1)-1]+' '+p.period_year"></p>
+                <p class="text-xs text-gray-400" x-text="bkTaskSummary(p.id)"></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <select x-model="p.status" @click.stop @change="updatePeriodStatus(p)"
+                  class="rounded-lg border border-gray-200 px-2 py-1 text-xs bg-white focus:border-navy-600 outline-none">
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="complete">Complete</option>
+                </select>
+                <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </template>
+        </div>
+        <!-- Task detail for selected period -->
+        <div x-show="bkSelectedPeriod" class="px-6 py-4">
+          <button @click="bkSelectedPeriod=null" class="flex items-center gap-1 text-xs text-navy-700 hover:text-navy-900 mb-4 font-medium">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Back to periods
+          </button>
+          <h3 class="font-semibold text-gray-900 mb-3" x-text="bkSelectedPeriod ? bkMonths[(bkSelectedPeriod.period_month||1)-1]+' '+bkSelectedPeriod.period_year+' — Tasks' : ''"></h3>
+          <div class="space-y-2">
+            <template x-for="t in bkActiveTasks" :key="t.id">
+              <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-800" x-text="t.task_name"></p>
+                  <textarea x-model="t.notes" placeholder="Add notes…" rows="1"
+                    @change="updateTaskNotes(t)"
+                    class="mt-1 block w-full text-xs rounded border border-gray-100 px-2 py-1 focus:border-navy-400 outline-none resize-none text-gray-500"></textarea>
+                </div>
+                <select x-model="t.status" @change="updateTaskStatus(t)"
+                  class="shrink-0 rounded-lg border border-gray-200 px-2 py-1.5 text-xs bg-white focus:border-navy-600 outline-none"
+                  :class="{
+                    'border-green-300 bg-green-50 text-green-700': t.status==='complete',
+                    'border-amber-300 bg-amber-50 text-amber-700': t.status==='in_progress',
+                    'border-gray-200 text-gray-400': t.status==='na',
+                  }">
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="complete">Complete</option>
+                  <option value="na">N/A</option>
+                </select>
+              </div>
+            </template>
+            <div x-show="bkActiveTasks.length===0" class="py-6 text-center text-sm text-gray-400">No tasks for this period.</div>
+          </div>
+          <!-- Period notes -->
+          <div class="mt-4">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Period Note (visible to client)</label>
+            <textarea x-model="bkSelectedPeriod.notes" rows="2" placeholder="Optional note for this period…"
+              class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none resize-none"></textarea>
+            <button @click="savePeriodNote()" class="mt-2 px-3 py-1.5 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg">Save Note</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TRAINING MODAL ══ -->
+  <div x-show="trainingOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" style="max-height:90vh">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <h2 class="font-bold text-gray-900" x-text="'Training — '+(activeCompany?activeCompany.company_name:'')"></h2>
+        <button @click="trainingOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <!-- Tabs -->
+      <div class="px-6 flex gap-1 border-b border-gray-100 shrink-0">
+        <template x-for="tab in trainingTabs" :key="tab.key">
+          <button @click="trainingTab=tab.key"
+            class="px-4 py-3 text-xs font-semibold border-b-2 transition-colors"
+            :class="trainingTab===tab.key ? 'border-navy-700 text-navy-800' : 'border-transparent text-gray-400 hover:text-gray-700'"
+            x-text="tab.label"></button>
+        </template>
+      </div>
+      <div class="overflow-y-auto flex-1 px-6 py-4">
+        <div x-show="trainingLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
+
+        <!-- STUDENTS tab -->
+        <div x-show="trainingTab==='students'&&!trainingLoading">
+          <div class="flex gap-2 mb-4">
+            <input type="text" x-model="newStudentName" placeholder="Full name"
+              class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            <input type="email" x-model="newStudentEmail" placeholder="Email (optional)"
+              class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            <button @click="addStudent()" :disabled="!newStudentName.trim()"
+              class="px-4 py-2 bg-purple-700 hover:bg-purple-600 disabled:opacity-40 text-white text-sm font-semibold rounded-lg">+ Add</button>
+          </div>
+          <div class="divide-y divide-gray-100">
+            <div x-show="trStudents.length===0" class="py-8 text-center text-sm text-gray-400">No students yet.</div>
+            <template x-for="s in trStudents" :key="s.id">
+              <div class="py-3 flex items-center gap-3">
+                <div class="flex-1">
+                  <p class="font-medium text-sm text-gray-900" x-text="s.full_name"></p>
+                  <p x-show="s.email" class="text-xs text-gray-400" x-text="s.email"></p>
+                </div>
+                <select x-model="s.status" @change="updateStudentStatus(s)"
+                  class="rounded-lg border border-gray-200 px-2 py-1 text-xs bg-white focus:border-navy-600 outline-none">
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="dropped">Dropped</option>
+                </select>
+                <button @click="deleteStudent(s)" class="text-gray-300 hover:text-red-400 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- RESOURCES tab -->
+        <div x-show="trainingTab==='resources'&&!trainingLoading">
+          <div class="space-y-2 mb-4">
+            <div class="flex gap-2 flex-wrap">
+              <input type="text" x-model="newResTitle" placeholder="Resource title"
+                class="flex-1 min-w-[160px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+              <select x-model="newResType" class="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none">
+                <option value="link">Link</option>
+                <option value="video">Video</option>
+                <option value="file">File (URL)</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <input type="url" x-model="newResUrl" placeholder="https://…"
+                class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+              <input type="text" x-model="newResDesc" placeholder="Description (optional)"
+                class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+              <button @click="addResource()" :disabled="!newResTitle.trim()||!newResUrl.trim()"
+                class="px-4 py-2 bg-purple-700 hover:bg-purple-600 disabled:opacity-40 text-white text-sm font-semibold rounded-lg whitespace-nowrap">+ Add</button>
+            </div>
+          </div>
+          <div class="divide-y divide-gray-100">
+            <div x-show="trResources.length===0" class="py-8 text-center text-sm text-gray-400">No resources yet.</div>
+            <template x-for="r in trResources" :key="r.id">
+              <div class="py-3 flex items-center gap-3">
+                <span class="text-xs px-2 py-0.5 rounded font-medium"
+                  :class="r.resource_type==='video'?'bg-red-100 text-red-700':r.resource_type==='file'?'bg-blue-100 text-blue-700':'bg-green-100 text-green-700'"
+                  x-text="r.resource_type.charAt(0).toUpperCase()+r.resource_type.slice(1)"></span>
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-sm text-gray-900 truncate" x-text="r.title"></p>
+                  <p x-show="r.description" class="text-xs text-gray-400 truncate" x-text="r.description"></p>
+                </div>
+                <a :href="r.url" target="_blank" class="text-xs text-navy-700 hover:underline font-medium shrink-0">Open ↗</a>
+                <button @click="deleteResource(r)" class="text-gray-300 hover:text-red-400 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- SESSIONS tab -->
+        <div x-show="trainingTab==='sessions'&&!trainingLoading">
+          <div class="flex gap-2 flex-wrap mb-4">
+            <input type="date" x-model="newSessDate"
+              class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            <input type="text" x-model="newSessTopic" placeholder="Session topic"
+              class="flex-1 min-w-[160px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            <input type="number" x-model="newSessHours" placeholder="Hrs" min="0.5" step="0.5"
+              class="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            <input type="url" x-model="newSessRecording" placeholder="Recording URL (optional)"
+              class="flex-1 min-w-[140px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            <button @click="addSession()" :disabled="!newSessDate||!newSessTopic.trim()"
+              class="px-4 py-2 bg-purple-700 hover:bg-purple-600 disabled:opacity-40 text-white text-sm font-semibold rounded-lg">+ Add</button>
+          </div>
+          <div class="divide-y divide-gray-100">
+            <div x-show="trSessions.length===0" class="py-8 text-center text-sm text-gray-400">No sessions yet.</div>
+            <template x-for="s in trSessions" :key="s.id">
+              <div class="py-3">
+                <div class="flex items-start gap-3">
+                  <div class="flex-1">
+                    <p class="font-medium text-sm text-gray-900" x-text="s.topic"></p>
+                    <div class="flex gap-3 mt-0.5 text-xs text-gray-400">
+                      <span x-text="formatDate(s.session_date)"></span>
+                      <span x-show="s.duration_hours" x-text="s.duration_hours + 'h'"></span>
+                    </div>
+                  </div>
+                  <a x-show="s.recording_url" :href="s.recording_url" target="_blank" class="text-xs font-medium text-red-600 hover:underline shrink-0">▶ Recording</a>
+                  <button @click="deleteSession(s)" class="text-gray-300 hover:text-red-400 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+                <!-- Attendance -->
+                <div x-show="trStudents.length>0" class="mt-2 flex flex-wrap gap-2">
+                  <template x-for="st in trStudents" :key="st.id">
+                    <button @click="toggleAttendance(s.id, st.id)"
+                      class="text-xs px-2.5 py-1 rounded-full font-medium transition-colors"
+                      :class="attendedMap[s.id+'_'+st.id] ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'"
+                      x-text="st.full_name + (attendedMap[s.id+'_'+st.id] ? ' ✓' : '')"></button>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TICKETS MODAL ══ -->
+  <div x-show="ticketsOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" style="max-height:90vh">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <h2 class="font-bold text-gray-900" x-text="'Tickets — '+(activeCompany?activeCompany.company_name:'')"></h2>
+        <button @click="ticketsOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <!-- Add ticket -->
+      <div class="px-6 py-3 border-b border-gray-100 shrink-0 space-y-2">
+        <div class="flex gap-2">
+          <input type="text" x-model="newTicketTitle" placeholder="Ticket title…"
+            class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          <select x-model="newTicketPriority" class="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:border-navy-600 outline-none">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+          <input type="date" x-model="newTicketDue" class="rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-navy-600 outline-none" />
+          <input type="number" x-model="newTicketHours" placeholder="Est h" class="w-20 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-navy-600 outline-none" />
+          <button @click="addTicket()" :disabled="!newTicketTitle.trim()"
+            class="px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 text-white text-sm font-semibold rounded-lg">+ Add</button>
+        </div>
+      </div>
+      <div class="overflow-y-auto flex-1 divide-y divide-gray-100">
+        <div x-show="ticketsLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
+        <div x-show="!ticketsLoading&&tickets.length===0" class="py-10 text-center text-sm text-gray-400">No tickets.</div>
+        <template x-for="t in tickets" :key="t.id">
+          <div class="px-6 py-4">
+            <div class="flex items-start gap-3">
+              <div class="w-1.5 min-h-8 rounded-full shrink-0 mt-1"
+                :class="{urgent:'bg-red-500',high:'bg-orange-400',medium:'bg-amber-400',low:'bg-gray-300'}[t.priority]"></div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-gray-900" x-text="t.title"></p>
+                <p x-show="t.description" class="text-xs text-gray-500 mt-0.5" x-text="t.description"></p>
+                <div class="flex items-center gap-3 mt-2 flex-wrap">
+                  <select x-model="t.status" @change="updateTicketStatus(t)"
+                    class="rounded-lg border border-gray-200 px-2 py-1 text-xs bg-white focus:border-navy-600 outline-none"
+                    :class="{open:'',in_progress:'border-amber-300 bg-amber-50',done:'border-green-300 bg-green-50',cancelled:'border-gray-200 opacity-50'}[t.status]">
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="done">Done</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <span class="text-xs text-gray-400" x-text="'Est '+t.est_hours+'h'" x-show="t.est_hours"></span>
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs text-gray-400">Actual:</span>
+                    <input type="number" x-model="t.actual_hours" @change="updateTicketHours(t)" placeholder="—"
+                      class="w-16 text-xs rounded border border-gray-200 px-1.5 py-0.5 focus:border-navy-400 outline-none" />
+                    <span class="text-xs text-gray-400">h</span>
+                  </div>
+                  <span x-show="t.due_date" class="text-xs text-gray-400" x-text="'Due '+formatDate(t.due_date)"></span>
+                </div>
+              </div>
+              <button @click="deleteTicket(t)" class="text-gray-300 hover:text-red-400 transition-colors mt-1 shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -370,41 +822,152 @@
 <script>
 const sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON__);
 const ADMIN_PIN = 'ADMIN2025';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function templateItemCount(template) {
   var secs = SECTION_TEMPLATES[template] || SECTION_TEMPLATES.general;
-  return secs.reduce(function(acc, s) {
-    return acc + s.items.filter(function(i) { return i.type !== 'info'; }).length;
-  }, 0);
+  return secs.reduce((a,s) => a + s.items.filter(i=>i.type!=='info').length, 0);
 }
-const TOTAL_ITEMS = templateItemCount('general');
 
-const ITEM_MAP = {};
-SECTIONS.forEach(function(s) {
-  s.items.forEach(function(i) {
-    ITEM_MAP[i.id] = { itemTitle: i.title, sectionTitle: s.title, sectionId: s.id, isInfo: i.type === 'info' };
-  });
-});
+// COA data for viewer
+const COA_LAW_FIRM = [
+  { label: 'ASSETS', accounts: [
+    {code:'1010',name:'Cash — Operating Account (NCB)'},{code:'1020',name:'Cash — Client Disbursements Holding'},
+    {code:'1030',name:'Client Trust Account (Scotiabank)'},{code:'1040',name:'Petty Cash'},
+    {code:'1100',name:'Accounts Receivable — Clients'},{code:'1110',name:'GCT Input Tax Recoverable'},
+    {code:'1200',name:'Work in Progress — Unbilled Time'},{code:'1210',name:'Work in Progress — Disbursements'},
+    {code:'1300',name:'Prepaid Expenses'},{code:'1400',name:'Security Deposits Paid'},
+    {code:'1500',name:'Computers & IT Equipment'},{code:'1510',name:'Less: Accum. Depreciation — IT'},
+    {code:'1520',name:'Office Furniture & Equipment'},{code:'1530',name:'Less: Accum. Depreciation — Furniture'},
+    {code:'1540',name:'Motor Vehicles'},{code:'1550',name:'Less: Accum. Depreciation — Vehicles'},
+    {code:'1560',name:'Leasehold Improvements'},{code:'1570',name:'Less: Accum. Depreciation — Leasehold'},
+  ]},
+  { label: 'LIABILITIES', accounts: [
+    {code:'2010',name:'Accounts Payable — Trade'},{code:'2020',name:'GCT Payable (Output Tax)'},
+    {code:'2030',name:'GCT Net Payable / (Recoverable)'},{code:'2040',name:'Income Tax Payable (Estimated)'},
+    {code:'2050',name:'NIS Contributions Payable'},{code:'2060',name:'NHT Contributions Payable'},
+    {code:'2070',name:'Education Tax Payable'},{code:'2080',name:'Client Retainer Deposits Held'},
+    {code:'2090',name:'Client Funds Held in Trust'},{code:'2100',name:'Accrued Liabilities'},
+    {code:'2200',name:'Loans Payable — Current Portion'},{code:'2300',name:'Loans Payable — Long Term'},
+  ]},
+  { label: 'EQUITY', accounts: [
+    {code:'3010',name:"Owner's Capital / Share Capital"},{code:'3020',name:'Retained Earnings — Prior Years'},
+    {code:'3030',name:"Owner's Draw / Distributions"},{code:'3040',name:'Current Year Net Income (auto)'},
+  ]},
+  { label: 'INCOME', accounts: [
+    {code:'4010',name:'Professional Fees — Conveyancing'},{code:'4020',name:'Professional Fees — Litigation'},
+    {code:'4030',name:'Professional Fees — Corporate'},{code:'4040',name:'Professional Fees — Family'},
+    {code:'4050',name:'Professional Fees — Other'},{code:'4100',name:'Client Disbursement Recoveries'},
+  ]},
+  { label: 'COST OF REVENUE', accounts: [
+    {code:'5010',name:'Contractor / Paralegal Fees'},{code:'5020',name:'Court & Filing Fees (Reimbursable)'},
+    {code:'5030',name:'Title Search & NLA Fees'},
+  ]},
+  { label: 'OPERATING EXPENSES', accounts: [
+    {code:'6010',name:'Office Rent'},{code:'6020',name:'Utilities & Internet'},
+    {code:'6030',name:'Professional Indemnity Insurance'},{code:'6040',name:'Bar Association / GLC Fees'},
+    {code:'6050',name:'Professional Development & CPD'},{code:'6060',name:'Office Supplies & Stationery'},
+    {code:'6070',name:'IT & Software Subscriptions'},{code:'6080',name:'Marketing & Business Development'},
+    {code:'6090',name:'Vehicle & Transportation'},{code:'6100',name:'Professional Fees (Accountant, etc.)'},
+    {code:'6110',name:'Bank Charges & Interest'},{code:'6120',name:'Depreciation Expense'},
+  ]},
+];
+
+const COA_CONSTRUCTION = [
+  { label: 'ASSETS', accounts: [
+    {code:'1010',name:'Cash — Operating Account'},{code:'1020',name:'Cash — Construction Project Account'},
+    {code:'1030',name:'Cash — Rental Revenue Account'},{code:'1040',name:'Petty Cash'},
+    {code:'1100',name:'Accounts Receivable — Construction'},{code:'1110',name:'GCT Input Tax Recoverable'},
+    {code:'1200',name:'Work-in-Progress — Construction (Unbilled)'},{code:'1300',name:'Prepaid Expenses & Deposits'},
+    {code:'1400',name:'Materials & Supplies Inventory'},
+    {code:'1500',name:'Investment Properties — Land'},{code:'1510',name:'Investment Properties — Buildings'},
+    {code:'1520',name:'Less: Accum. Depreciation — Buildings'},{code:'1530',name:'Renovation & CapEx Costs'},
+    {code:'1600',name:'Construction Equipment & Tools'},{code:'1610',name:'Less: Accum. Depreciation — Equipment'},
+    {code:'1700',name:'Motor Vehicles'},{code:'1710',name:'Less: Accum. Depreciation — Vehicles'},
+    {code:'1800',name:'Computers & IT Equipment'},{code:'1810',name:'Less: Accum. Depreciation — IT'},
+  ]},
+  { label: 'LIABILITIES', accounts: [
+    {code:'2010',name:'Accounts Payable — Suppliers & Subcontractors'},{code:'2020',name:'GCT Payable (Output Tax)'},
+    {code:'2030',name:'GCT Net Payable / (Recoverable)'},{code:'2040',name:'Income Tax Payable'},
+    {code:'2050',name:'NIS Payable'},{code:'2060',name:'NHT Payable'},{code:'2070',name:'Education Tax Payable'},
+    {code:'2080',name:'Payroll Liabilities — PAYE'},{code:'2090',name:'Retentions Held by Clients'},
+    {code:'2100',name:'Accrued Liabilities'},{code:'2200',name:'Mortgage — Unit 1 (Blue Lagoon)'},
+    {code:'2210',name:'Mortgage — Unit 2 (Palm View)'},{code:'2300',name:'Business Loan Payable'},
+    {code:'2400',name:'Hire Purchase / Equipment Finance'},
+  ]},
+  { label: 'EQUITY', accounts: [
+    {code:'3010',name:'Share Capital / Owner\'s Capital'},{code:'3020',name:'Retained Earnings — Prior Years'},
+    {code:'3030',name:'Owner\'s Draw / Distributions'},{code:'3040',name:'Current Year Net Income (auto)'},
+  ]},
+  { label: 'INCOME', accounts: [
+    {code:'4010',name:'Construction Revenue — Progress Billings'},{code:'4020',name:'Construction Revenue — Final Completion'},
+    {code:'4030',name:'Variation / Extra Works Revenue'},{code:'4110',name:'STR / Airbnb Nightly Revenue'},
+    {code:'4120',name:'Cleaning Fee Income'},{code:'4130',name:'Miscellaneous Rental Income'},
+  ]},
+  { label: 'COST OF REVENUE', accounts: [
+    {code:'5010',name:'Materials & Supplies — Construction'},{code:'5020',name:'Direct Labour — Construction'},
+    {code:'5030',name:'Subcontractor Costs'},{code:'5040',name:'Equipment Rental — External'},
+    {code:'5050',name:'Construction Permits & Site Fees'},{code:'5110',name:'Cleaning & Housekeeping — Rental'},
+    {code:'5120',name:'Airbnb Host Service Fees (~3%)'},{code:'5130',name:'Linen, Toiletries & Guest Supplies'},
+  ]},
+  { label: 'OPERATING EXPENSES', accounts: [
+    {code:'6010',name:'Repairs & Maintenance — Properties'},{code:'6020',name:'Utilities — Rental Properties'},
+    {code:'6030',name:'Property Insurance'},{code:'6040',name:'Construction Liability Insurance'},
+    {code:'6050',name:'Vehicle & Transportation'},{code:'6060',name:'Marketing & Advertising'},
+    {code:'6070',name:'Professional Fees (Accountant, Legal)'},{code:'6080',name:'Office & Administration'},
+    {code:'6090',name:'Software & Subscriptions'},{code:'6100',name:'Depreciation — Equipment & Vehicles'},
+    {code:'6110',name:'Mortgage Interest Expense'},{code:'6120',name:'Bank Charges & Fees'},
+  ]},
+];
 
 function adminApp() {
   return {
     authed: false, pin: '', pinError: '',
-    companies: [], responseCounts: {},
-    newName: '', newCode: '', newTemplate: 'general', newProposalUrl: '', adding: false, addError: '',
+    companies: [], responseCounts: {}, todoCounts: {},
+    newName: '', newCode: '', newTemplate: 'general', newServiceType: 'implementation',
+    newProposalUrl: '', newPartnerName: '', adding: false, addError: '',
     activeCompany: null, copiedId: null,
+
     // Activity
-    activityOpen: false, activityLoading: false, activities: [], todoCounts: {},
+    activityOpen: false, activityLoading: false, activities: [],
     newActType: 'todo', newActContent: '', activityAdding: false, activityTab: 'all',
     activityTabs: [
-      { key: 'all',     label: 'All'     },
-      { key: 'todo',    label: 'To-do'   },
-      { key: 'request', label: 'Requests'},
-      { key: 'note',    label: 'Notes'   },
-      { key: 'message', label: 'Messages'},
-      { key: 'update',  label: 'Updates' },
+      {key:'all',label:'All'},{key:'todo',label:'To-do'},{key:'request',label:'Requests'},
+      {key:'note',label:'Notes'},{key:'message',label:'Messages'},{key:'update',label:'Updates'},
     ],
+
+    // Files
     filesOpen: false, filesLoading: false, filesList: [],
+
+    // Customize
     customizeOpen: false, customizeSaving: false, customizeItems: [],
+
+    // Gantt
+    ganttOpen: false, ganttLoading: false, ganttPhases: [], ganttSaving: false,
+    ganttStart: null, // earliest date for bar calculation
+
+    // COA
+    coaOpen: false, coaLoading: false, coaGroups: [], coaUnlocked: new Set(),
+
+    // Bookkeeping
+    bkOpen: false, bkLoading: false, bkPeriods: [], bkTasksByPeriod: {},
+    bkSelectedPeriod: null, bkActiveTasks: [],
+    bkNewYear: new Date().getFullYear(), bkNewMonth: new Date().getMonth() + 1,
+    bkAdding: false,
+    bkMonths: MONTHS,
+
+    // Training
+    trainingOpen: false, trainingLoading: false, trainingTab: 'students',
+    trainingTabs: [{key:'students',label:'Students'},{key:'resources',label:'Resources'},{key:'sessions',label:'Sessions'}],
+    trStudents: [], trResources: [], trSessions: [],
+    attendedMap: {},
+    newStudentName: '', newStudentEmail: '',
+    newResTitle: '', newResType: 'link', newResUrl: '', newResDesc: '',
+    newSessDate: '', newSessTopic: '', newSessHours: '', newSessRecording: '',
+
+    // Tickets
+    ticketsOpen: false, ticketsLoading: false, tickets: [],
+    newTicketTitle: '', newTicketDesc: '', newTicketPriority: 'medium', newTicketDue: '', newTicketHours: '',
 
     async init() {
       this.authed = sessionStorage.getItem('ob_admin') === ADMIN_PIN;
@@ -414,264 +977,368 @@ function adminApp() {
     checkPin() {
       if (this.pin === ADMIN_PIN) {
         sessionStorage.setItem('ob_admin', ADMIN_PIN);
-        this.authed = true;
-        this.load();
-      } else {
-        this.pinError = 'Incorrect PIN.';
-      }
+        this.authed = true; this.load();
+      } else { this.pinError = 'Incorrect PIN.'; }
     },
 
     async load() {
-      const { data: companies } = await sb.from('onboarding_clients').select('*').order('company_name');
-      this.companies = companies || [];
-      this.responseCounts = {};
-      this.todoCounts = {};
+      const { data } = await sb.from('onboarding_clients').select('*').order('company_name');
+      this.companies = data || [];
+      this.responseCounts = {}; this.todoCounts = {};
       if (this.companies.length) {
         const { data: counts } = await sb.from('onboarding_responses').select('client_id').eq('is_complete', true);
-        if (counts) counts.forEach(function(r) {
-          this.responseCounts[r.client_id] = (this.responseCounts[r.client_id] || 0) + 1;
-        }.bind(this));
-        const { data: todos } = await sb.from('onboarding_activities').select('client_id').eq('type', 'todo').eq('is_done', false);
-        if (todos) todos.forEach(function(t) {
-          this.todoCounts[t.client_id] = (this.todoCounts[t.client_id] || 0) + 1;
-        }.bind(this));
+        if (counts) counts.forEach(r => { this.responseCounts[r.client_id] = (this.responseCounts[r.client_id]||0)+1; });
+        const { data: todos } = await sb.from('onboarding_activities').select('client_id').eq('type','todo').eq('is_done',false);
+        if (todos) todos.forEach(t => { this.todoCounts[t.client_id] = (this.todoCounts[t.client_id]||0)+1; });
       }
     },
 
-    totalItems(c) {
-      return templateItemCount(c.template || 'general');
-    },
-
+    totalItems(c) { return templateItemCount(c.template||'general'); },
     progress(clientId, c) {
-      var total = c ? templateItemCount(c.template || 'general') : TOTAL_ITEMS;
-      return total > 0 ? Math.round(((this.responseCounts[clientId] || 0) / total) * 100) : 0;
+      var total = c ? templateItemCount(c.template||'general') : 0;
+      return total > 0 ? Math.round(((this.responseCounts[clientId]||0)/total)*100) : 0;
     },
 
     async addCompany() {
       this.addError = '';
       if (!this.newName || !this.newCode) return;
       this.adding = true;
-      const payload = { company_name: this.newName.trim(), access_code: this.newCode.trim(), template: this.newTemplate };
+      const payload = {
+        company_name: this.newName.trim(),
+        access_code: this.newCode.trim(),
+        service_type: this.newServiceType,
+        template: this.newServiceType === 'implementation' ? this.newTemplate : 'general',
+      };
       if (this.newProposalUrl.trim()) payload.proposal_url = this.newProposalUrl.trim();
+      if (this.newPartnerName.trim()) payload.partner_name = this.newPartnerName.trim();
       const { error } = await sb.from('onboarding_clients').insert(payload);
       this.adding = false;
       if (error) { this.addError = error.message; return; }
-      this.newName = ''; this.newCode = ''; this.newTemplate = 'general'; this.newProposalUrl = '';
+      this.newName=''; this.newCode=''; this.newTemplate='general'; this.newServiceType='implementation';
+      this.newProposalUrl=''; this.newPartnerName='';
       await this.load();
     },
 
     viewCompany(c) {
       sessionStorage.setItem('ob_client_id', c.id);
       sessionStorage.setItem('ob_company_name', c.company_name);
+      sessionStorage.setItem('ob_service_type', c.service_type||'implementation');
       sessionStorage.setItem('ob_admin_viewing', 'true');
-      window.location.href = '/onboarding.html';
+      const routes = {implementation:'/onboarding.html',bookkeeping:'/bookkeeping-portal.html',training:'/training-portal.html',adhoc:'/adhoc-portal.html'};
+      window.location.href = routes[c.service_type]||'/onboarding.html';
     },
 
-    // ── ACTIVITY ──────────────────────────────────────────────────
+    // ── ACTIVITY ──
     async openActivity(c) {
-      this.activeCompany = c;
-      this.activities = [];
-      this.activityTab = 'all';
-      this.newActContent = '';
-      this.activityOpen = true;
-      this.activityLoading = true;
-      const { data } = await sb.from('onboarding_activities')
-        .select('*').eq('client_id', c.id).order('created_at', { ascending: false });
-      this.activities = data || [];
-      this.activityLoading = false;
+      this.activeCompany = c; this.activities = []; this.activityTab = 'all'; this.newActContent = '';
+      this.activityOpen = true; this.activityLoading = true;
+      const { data } = await sb.from('onboarding_activities').select('*').eq('client_id',c.id).order('created_at',{ascending:false});
+      this.activities = data || []; this.activityLoading = false;
     },
-
     get filteredActivities() {
-      if (this.activityTab === 'all') return this.activities;
-      return this.activities.filter(function(a) { return a.type === this.activityTab; }.bind(this));
+      if (this.activityTab==='all') return this.activities;
+      return this.activities.filter(a => a.type===this.activityTab);
     },
-
-    tabCount(key) {
-      if (key === 'all') return this.activities.length;
-      return this.activities.filter(function(a) { return a.type === key; }).length;
-    },
-
+    tabCount(key) { return key==='all' ? this.activities.length : this.activities.filter(a=>a.type===key).length; },
     async addActivity() {
-      var content = this.newActContent.trim();
-      if (!content) return;
+      var content = this.newActContent.trim(); if (!content) return;
       this.activityAdding = true;
-      var payload = { client_id: this.activeCompany.id, type: this.newActType, content: content };
-      var self = this;
-      var resp = await sb.from('onboarding_activities').insert(payload).select().single();
+      var resp = await sb.from('onboarding_activities').insert({client_id:this.activeCompany.id,type:this.newActType,content}).select().single();
       this.activityAdding = false;
-      if (resp.error) { alert('Failed: ' + resp.error.message); return; }
-      this.activities.unshift(resp.data);
-      this.newActContent = '';
-      // update badge count
-      if (this.newActType === 'todo') {
-        this.todoCounts[this.activeCompany.id] = (this.todoCounts[this.activeCompany.id] || 0) + 1;
-      }
+      if (resp.error) { alert('Failed: '+resp.error.message); return; }
+      this.activities.unshift(resp.data); this.newActContent = '';
+      if (this.newActType==='todo') this.todoCounts[this.activeCompany.id] = (this.todoCounts[this.activeCompany.id]||0)+1;
     },
-
     async toggleTodo(a) {
       var done = !a.is_done;
-      await sb.from('onboarding_activities').update({ is_done: done, updated_at: new Date().toISOString() }).eq('id', a.id);
+      await sb.from('onboarding_activities').update({is_done:done,updated_at:new Date().toISOString()}).eq('id',a.id);
       a.is_done = done;
-      // update badge
-      var delta = done ? -1 : 1;
-      this.todoCounts[this.activeCompany.id] = Math.max(0, (this.todoCounts[this.activeCompany.id] || 0) + delta);
+      this.todoCounts[this.activeCompany.id] = Math.max(0,(this.todoCounts[this.activeCompany.id]||0)+(done?-1:1));
     },
-
     async deleteActivity(a) {
       if (!confirm('Delete this item?')) return;
-      await sb.from('onboarding_activities').delete().eq('id', a.id);
-      this.activities = this.activities.filter(function(x) { return x.id !== a.id; });
-      if (a.type === 'todo' && !a.is_done) {
-        this.todoCounts[this.activeCompany.id] = Math.max(0, (this.todoCounts[this.activeCompany.id] || 0) - 1);
-      }
+      await sb.from('onboarding_activities').delete().eq('id',a.id);
+      this.activities = this.activities.filter(x=>x.id!==a.id);
+      if (a.type==='todo'&&!a.is_done) this.todoCounts[this.activeCompany.id] = Math.max(0,(this.todoCounts[this.activeCompany.id]||0)-1);
     },
+    typeColor(t) { return {note:'bg-gray-400',request:'bg-blue-500',message:'bg-indigo-500',update:'bg-green-500',todo:'bg-amber-400'}[t]||'bg-gray-300'; },
+    typeBadge(t) { return {note:'bg-gray-100 text-gray-600',request:'bg-blue-50 text-blue-700',message:'bg-indigo-50 text-indigo-700',update:'bg-green-50 text-green-700',todo:'bg-amber-50 text-amber-700'}[t]||'bg-gray-100 text-gray-500'; },
 
-    typeColor(type) {
-      return { note:'bg-gray-400', request:'bg-blue-500', message:'bg-indigo-500', update:'bg-green-500', todo:'bg-amber-400' }[type] || 'bg-gray-300';
-    },
-
-    typeBadge(type) {
-      return { note:'bg-gray-100 text-gray-600', request:'bg-blue-50 text-blue-700', message:'bg-indigo-50 text-indigo-700', update:'bg-green-50 text-green-700', todo:'bg-amber-50 text-amber-700' }[type] || 'bg-gray-100 text-gray-500';
-    },
-
-    copyCode(code) {
-      navigator.clipboard.writeText(code).catch(function() {
-        // fallback for older browsers
-        var el = document.createElement('textarea');
-        el.value = code; document.body.appendChild(el); el.select();
-        document.execCommand('copy'); document.body.removeChild(el);
+    copyCode(c) {
+      navigator.clipboard.writeText(c.access_code).catch(()=>{
+        var el=document.createElement('textarea'); el.value=c.access_code; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
       });
-      var c = this.companies.find(function(c) { return c.access_code === code; });
-      this.copiedId = c ? c.id : null;
-      setTimeout(function() { this.copiedId = null; }.bind(this), 2000);
+      this.copiedId = c.id; setTimeout(()=>{ this.copiedId=null; },2000);
     },
-
     async toggleActive(c) {
-      await sb.from('onboarding_clients').update({ is_active: !c.is_active }).eq('id', c.id);
+      await sb.from('onboarding_clients').update({is_active:!c.is_active}).eq('id',c.id);
       c.is_active = !c.is_active;
     },
 
-    // Files modal
+    // ── FILES ──
     async openFiles(c) {
-      this.activeCompany = c;
-      this.filesList = [];
-      this.filesOpen = true;
-      this.filesLoading = true;
-      const { data } = await sb.from('onboarding_uploads')
-        .select('*').eq('client_id', c.id).order('uploaded_at');
-      this.filesList = data || [];
-      this.filesLoading = false;
+      this.activeCompany=c; this.filesList=[]; this.filesOpen=true; this.filesLoading=true;
+      const { data } = await sb.from('onboarding_uploads').select('*').eq('client_id',c.id).order('uploaded_at');
+      this.filesList = data||[]; this.filesLoading=false;
     },
-
     get filesGrouped() {
-      var tmpl = this.activeCompany ? (this.activeCompany.template || 'general') : 'general';
-      var secs = SECTION_TEMPLATES[tmpl] || SECTION_TEMPLATES.general;
-      const groups = {};
-      secs.forEach(function(s) {
-        s.items.forEach(function(i) {
-          groups[i.id] = { itemId: i.id, itemTitle: i.title, sectionTitle: s.title, sectionId: s.id, files: [] };
-        });
+      var tmpl = this.activeCompany ? (this.activeCompany.template||'general') : 'general';
+      var secs = SECTION_TEMPLATES[tmpl]||SECTION_TEMPLATES.general;
+      const groups={};
+      secs.forEach(s=>s.items.forEach(i=>{ groups[i.id]={itemId:i.id,itemTitle:i.title,sectionTitle:s.title,sectionId:s.id,files:[]}; }));
+      this.filesList.forEach(f=>{
+        if (groups[f.item_id]) groups[f.item_id].files.push(f);
+        else { if(!groups['__other__']) groups['__other__']={itemId:'__other__',itemTitle:'Other',sectionTitle:'Other',sectionId:'__other__',files:[]}; groups['__other__'].files.push(f); }
       });
-      // Also bucket any files whose item_id isn't in the template (catch-all)
-      this.filesList.forEach(function(f) {
-        if (groups[f.item_id]) {
-          groups[f.item_id].files.push(f);
-        } else {
-          if (!groups['__other__']) groups['__other__'] = { itemId: '__other__', itemTitle: 'Other', sectionTitle: 'Other', sectionId: '__other__', files: [] };
-          groups['__other__'].files.push(f);
-        }
-      });
-      var result = [];
-      var lastSection = null;
-      secs.forEach(function(s) {
-        s.items.forEach(function(i) {
-          var g = groups[i.id];
-          if (!g || g.files.length === 0) return;
-          g.isFirstInSection = g.sectionId !== lastSection;
-          lastSection = g.sectionId;
-          result.push(Object.assign({}, g));
-        });
-      });
-      if (groups['__other__'] && groups['__other__'].files.length > 0) {
-        groups['__other__'].isFirstInSection = true;
-        result.push(Object.assign({}, groups['__other__']));
-      }
+      var result=[],lastSection=null;
+      secs.forEach(s=>s.items.forEach(i=>{ var g=groups[i.id]; if(!g||!g.files.length) return; g.isFirstInSection=g.sectionId!==lastSection; lastSection=g.sectionId; result.push(Object.assign({},g)); }));
+      if (groups['__other__']&&groups['__other__'].files.length) { groups['__other__'].isFirstInSection=true; result.push(Object.assign({},groups['__other__'])); }
       return result;
     },
-
     async downloadFile(f) {
-      const { data, error } = await sb.storage.from('documents').createSignedUrl(f.storage_key, 3600);
-      if (error) { alert('Could not generate download link: ' + error.message); return; }
-      window.open(data.signedUrl, '_blank');
+      const {data,error} = await sb.storage.from('documents').createSignedUrl(f.storage_key,3600);
+      if (error) { alert('Error: '+error.message); return; }
+      window.open(data.signedUrl,'_blank');
     },
 
-    formatBytes(bytes) {
-      if (!bytes) return '';
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-      return (bytes / 1048576).toFixed(1) + ' MB';
-    },
-
-    formatDate(ts) {
-      if (!ts) return '';
-      return new Date(ts).toLocaleDateString('en-JM', { day: 'numeric', month: 'short', year: 'numeric' });
-    },
-
-    // Customize modal
+    // ── CUSTOMIZE ──
     async openCustomize(c) {
-      this.activeCompany = c;
-      const overrides = c.checklist_overrides || {};
-      this.customizeItems = [];
-      var secs = SECTION_TEMPLATES[c.template || 'general'] || SECTION_TEMPLATES.general;
-      secs.forEach(function(s) {
-        s.items.forEach(function(item, idx) {
-          this.customizeItems.push({
-            id: item.id,
-            sectionTitle: s.title,
-            sectionId: s.id,
-            isFirstInSection: idx === 0,
-            isInfo: item.type === 'info',
-            defaultTitle: item.title,
-            defaultDescription: item.description || '',
-            title:       (overrides[item.id] && overrides[item.id].title       !== undefined) ? overrides[item.id].title       : item.title,
-            description: (overrides[item.id] && overrides[item.id].description !== undefined) ? overrides[item.id].description : (item.description || ''),
-            hidden:      (overrides[item.id] && overrides[item.id].hidden      !== undefined) ? overrides[item.id].hidden      : false,
-          });
-        }.bind(this));
-      }.bind(this));
-      this.customizeOpen = true;
+      this.activeCompany=c;
+      const overrides=c.checklist_overrides||{};
+      this.customizeItems=[];
+      var secs=SECTION_TEMPLATES[c.template||'general']||SECTION_TEMPLATES.general;
+      secs.forEach(s=>s.items.forEach((item,idx)=>{
+        this.customizeItems.push({
+          id:item.id,sectionTitle:s.title,sectionId:s.id,isFirstInSection:idx===0,isInfo:item.type==='info',
+          defaultTitle:item.title,defaultDescription:item.description||'',
+          title:(overrides[item.id]?.title!==undefined)?overrides[item.id].title:item.title,
+          description:(overrides[item.id]?.description!==undefined)?overrides[item.id].description:(item.description||''),
+          hidden:(overrides[item.id]?.hidden!==undefined)?overrides[item.id].hidden:false,
+        });
+      }));
+      this.customizeOpen=true;
     },
-
     resetAllCustomize() {
-      if (!confirm('Reset all customizations for this company to defaults?')) return;
-      this.customizeItems.forEach(function(i) {
-        i.title = i.defaultTitle;
-        i.description = i.defaultDescription;
-        i.hidden = false;
-      });
+      if (!confirm('Reset all?')) return;
+      this.customizeItems.forEach(i=>{ i.title=i.defaultTitle; i.description=i.defaultDescription; i.hidden=false; });
     },
-
     async saveCustomize() {
-      this.customizeSaving = true;
-      const overrides = {};
-      this.customizeItems.forEach(function(i) {
-        const changed = i.title !== i.defaultTitle || i.description !== i.defaultDescription || i.hidden;
-        if (changed) overrides[i.id] = { title: i.title, description: i.description, hidden: i.hidden };
-      });
-      const { error } = await sb.from('onboarding_clients')
-        .update({ checklist_overrides: overrides })
-        .eq('id', this.activeCompany.id);
-      this.customizeSaving = false;
-      if (error) { alert('Save failed: ' + error.message); return; }
-      const c = this.companies.find(function(c) { return c.id === this.activeCompany.id; }.bind(this));
-      if (c) c.checklist_overrides = overrides;
-      this.customizeOpen = false;
+      this.customizeSaving=true;
+      const overrides={};
+      this.customizeItems.forEach(i=>{ if(i.title!==i.defaultTitle||i.description!==i.defaultDescription||i.hidden) overrides[i.id]={title:i.title,description:i.description,hidden:i.hidden}; });
+      const {error} = await sb.from('onboarding_clients').update({checklist_overrides:overrides}).eq('id',this.activeCompany.id);
+      this.customizeSaving=false;
+      if (error) { alert('Save failed: '+error.message); return; }
+      const c=this.companies.find(c=>c.id===this.activeCompany.id);
+      if (c) c.checklist_overrides=overrides;
+      this.customizeOpen=false;
     },
 
-    logout() {
-      sessionStorage.removeItem('ob_admin');
-      this.authed = false; this.pin = '';
+    // ── GANTT ──
+    async openGantt(c) {
+      this.activeCompany=c; this.ganttOpen=true; this.ganttLoading=true; this.ganttPhases=[];
+      var secs = SECTION_TEMPLATES[c.template||'general']||SECTION_TEMPLATES.general;
+      const {data:phases} = await sb.from('project_phases').select('*').eq('client_id',c.id);
+      const {data:responses} = await sb.from('onboarding_responses').select('item_id,is_complete').eq('client_id',c.id);
+      const respMap={};
+      if (responses) responses.forEach(r=>{ respMap[r.item_id]=r.is_complete; });
+      const phaseMap={};
+      if (phases) phases.forEach(p=>{ phaseMap[p.section_id]=p; });
+      this.ganttPhases = secs.map((s,idx)=>{
+        var items=s.items.filter(i=>i.type!=='info');
+        var completed=items.filter(i=>respMap[i.id]).length;
+        var existing=phaseMap[s.id]||{};
+        return { section_id:s.id, name:s.title, phase_order:idx, totalItems:items.length, completedItems:completed,
+          target_start:existing.target_start||'', target_end:existing.target_end||'', actual_end:existing.actual_end||'', id:existing.id||null };
+      });
+      this.ganttLoading=false;
     },
+    ganttBarStyle(phase) {
+      if (!phase.target_start||!phase.target_end) return 'width:0%';
+      var allStarts=this.ganttPhases.filter(p=>p.target_start).map(p=>new Date(p.target_start).getTime());
+      var allEnds=this.ganttPhases.filter(p=>p.target_end).map(p=>new Date(p.target_end).getTime());
+      if (!allStarts.length||!allEnds.length) return 'width:0%';
+      var minT=Math.min(...allStarts), maxT=Math.max(...allEnds), range=maxT-minT;
+      if (range===0) return 'width:100%;left:0%';
+      var s=new Date(phase.target_start).getTime(), e=new Date(phase.target_end).getTime();
+      var left=((s-minT)/range*100).toFixed(1), width=((e-s)/range*100).toFixed(1);
+      return 'left:'+left+'%;width:'+width+'%';
+    },
+    async saveGantt() {
+      this.ganttSaving=true;
+      for (var phase of this.ganttPhases) {
+        var payload={client_id:this.activeCompany.id,section_id:phase.section_id,name:phase.name,phase_order:phase.phase_order,
+          target_start:phase.target_start||null,target_end:phase.target_end||null,actual_end:phase.actual_end||null,updated_at:new Date().toISOString()};
+        await sb.from('project_phases').upsert(payload,{onConflict:'client_id,section_id'});
+      }
+      this.ganttSaving=false; this.ganttOpen=false;
+    },
+
+    // ── COA ──
+    async openCOA(c) {
+      this.activeCompany=c; this.coaOpen=true; this.coaLoading=true; this.coaUnlocked=new Set();
+      this.coaGroups = c.template==='construction_rental' ? COA_CONSTRUCTION : COA_LAW_FIRM;
+      // Figure out which sections are "complete" (all non-info items done)
+      var secs = SECTION_TEMPLATES[c.template||'law_firm']||SECTION_TEMPLATES.law_firm;
+      const {data:responses} = await sb.from('onboarding_responses').select('item_id,is_complete').eq('client_id',c.id);
+      const respMap={}; if (responses) responses.forEach(r=>{ respMap[r.item_id]=r.is_complete; });
+      var mappings = COA_MAPPINGS[c.template||'law_firm']||{};
+      secs.forEach(s=>{
+        var items=s.items.filter(i=>i.type!=='info');
+        var allDone=items.length>0&&items.every(i=>respMap[i.id]);
+        if (allDone) { var codes=mappings[s.id]||[]; codes.forEach(code=>this.coaUnlocked.add(code)); }
+      });
+      this.coaLoading=false;
+    },
+
+    // ── BOOKKEEPING ──
+    async openBookkeeping(c) {
+      this.activeCompany=c; this.bkOpen=true; this.bkLoading=true;
+      this.bkPeriods=[]; this.bkTasksByPeriod={}; this.bkSelectedPeriod=null;
+      const {data:periods} = await sb.from('bookkeeping_periods').select('*').eq('client_id',c.id).order('period_year').order('period_month');
+      this.bkPeriods=(periods||[]).reverse();
+      const {data:tasks} = await sb.from('bookkeeping_tasks').select('*').eq('client_id',c.id).order('created_at');
+      if (tasks) tasks.forEach(t=>{ if(!this.bkTasksByPeriod[t.period_id]) this.bkTasksByPeriod[t.period_id]=[]; this.bkTasksByPeriod[t.period_id].push(t); });
+      this.bkLoading=false;
+    },
+    bkTaskSummary(periodId) {
+      var tasks=this.bkTasksByPeriod[periodId]||[]; if(!tasks.length) return 'No tasks yet';
+      return tasks.filter(t=>t.status==='complete').length+'/'+tasks.length+' complete';
+    },
+    async addPeriod() {
+      if (!this.bkNewYear||!this.bkNewMonth) return;
+      this.bkAdding=true;
+      const {data:period,error} = await sb.from('bookkeeping_periods').insert({
+        client_id:this.activeCompany.id,period_year:parseInt(this.bkNewYear),period_month:parseInt(this.bkNewMonth),status:'pending'
+      }).select().single();
+      if (error) { alert('Error: '+error.message); this.bkAdding=false; return; }
+      // Create standard tasks
+      var taskPayloads = BOOKKEEPING_TASKS.map(t=>({period_id:period.id,client_id:this.activeCompany.id,task_type:t.task_type,task_name:t.task_name,status:'pending'}));
+      const {data:tasks} = await sb.from('bookkeeping_tasks').insert(taskPayloads).select();
+      this.bkTasksByPeriod[period.id]=tasks||[];
+      this.bkPeriods.unshift(period);
+      this.bkAdding=false;
+    },
+    async selectPeriod(p) {
+      this.bkSelectedPeriod=p;
+      this.bkActiveTasks=this.bkTasksByPeriod[p.id]||[];
+    },
+    async updatePeriodStatus(p) {
+      await sb.from('bookkeeping_periods').update({status:p.status,updated_at:new Date().toISOString()}).eq('id',p.id);
+    },
+    async updateTaskStatus(t) {
+      var payload={status:t.status,updated_at:new Date().toISOString()};
+      if (t.status==='complete') payload.completed_at=new Date().toISOString();
+      await sb.from('bookkeeping_tasks').update(payload).eq('id',t.id);
+    },
+    async updateTaskNotes(t) {
+      await sb.from('bookkeeping_tasks').update({notes:t.notes,updated_at:new Date().toISOString()}).eq('id',t.id);
+    },
+    async savePeriodNote() {
+      if (!this.bkSelectedPeriod) return;
+      await sb.from('bookkeeping_periods').update({notes:this.bkSelectedPeriod.notes,updated_at:new Date().toISOString()}).eq('id',this.bkSelectedPeriod.id);
+    },
+
+    // ── TRAINING ──
+    async openTraining(c) {
+      this.activeCompany=c; this.trainingOpen=true; this.trainingLoading=true; this.trainingTab='students';
+      this.trStudents=[]; this.trResources=[]; this.trSessions=[]; this.attendedMap={};
+      await Promise.all([this.loadTrainingStudents(), this.loadTrainingResources(), this.loadTrainingSessions()]);
+      this.trainingLoading=false;
+    },
+    async loadTrainingStudents() {
+      const {data} = await sb.from('training_students').select('*').eq('client_id',this.activeCompany.id).order('full_name');
+      this.trStudents=data||[];
+    },
+    async loadTrainingResources() {
+      const {data} = await sb.from('training_resources').select('*').eq('client_id',this.activeCompany.id).order('resource_order').order('created_at');
+      this.trResources=data||[];
+    },
+    async loadTrainingSessions() {
+      const {data:sessions} = await sb.from('training_sessions').select('*').eq('client_id',this.activeCompany.id).order('session_date',{ascending:false});
+      this.trSessions=sessions||[];
+      if (this.trSessions.length) {
+        const ids=this.trSessions.map(s=>s.id);
+        const {data:att} = await sb.from('training_attendance').select('*').in('session_id',ids);
+        this.attendedMap={};
+        if (att) att.forEach(a=>{ this.attendedMap[a.session_id+'_'+a.student_id]=a.attended; });
+      }
+    },
+    async addStudent() {
+      if (!this.newStudentName.trim()) return;
+      const {data,error} = await sb.from('training_students').insert({client_id:this.activeCompany.id,full_name:this.newStudentName.trim(),email:this.newStudentEmail.trim()||null}).select().single();
+      if (error) { alert(error.message); return; }
+      this.trStudents.push(data); this.newStudentName=''; this.newStudentEmail='';
+    },
+    async updateStudentStatus(s) {
+      await sb.from('training_students').update({status:s.status}).eq('id',s.id);
+    },
+    async deleteStudent(s) {
+      if (!confirm('Delete student?')) return;
+      await sb.from('training_students').delete().eq('id',s.id);
+      this.trStudents=this.trStudents.filter(x=>x.id!==s.id);
+    },
+    async addResource() {
+      if (!this.newResTitle.trim()||!this.newResUrl.trim()) return;
+      const {data,error} = await sb.from('training_resources').insert({client_id:this.activeCompany.id,title:this.newResTitle.trim(),resource_type:this.newResType,url:this.newResUrl.trim(),description:this.newResDesc.trim()||null}).select().single();
+      if (error) { alert(error.message); return; }
+      this.trResources.push(data); this.newResTitle=''; this.newResUrl=''; this.newResDesc='';
+    },
+    async deleteResource(r) {
+      if (!confirm('Delete resource?')) return;
+      await sb.from('training_resources').delete().eq('id',r.id);
+      this.trResources=this.trResources.filter(x=>x.id!==r.id);
+    },
+    async addSession() {
+      if (!this.newSessDate||!this.newSessTopic.trim()) return;
+      const {data,error} = await sb.from('training_sessions').insert({client_id:this.activeCompany.id,session_date:this.newSessDate,topic:this.newSessTopic.trim(),duration_hours:this.newSessHours||null,recording_url:this.newSessRecording.trim()||null}).select().single();
+      if (error) { alert(error.message); return; }
+      this.trSessions.unshift(data); this.newSessDate=''; this.newSessTopic=''; this.newSessHours=''; this.newSessRecording='';
+    },
+    async deleteSession(s) {
+      if (!confirm('Delete session?')) return;
+      await sb.from('training_sessions').delete().eq('id',s.id);
+      this.trSessions=this.trSessions.filter(x=>x.id!==s.id);
+    },
+    async toggleAttendance(sessionId, studentId) {
+      var key=sessionId+'_'+studentId;
+      var current=this.attendedMap[key]||false;
+      var newVal=!current;
+      await sb.from('training_attendance').upsert({session_id:sessionId,student_id:studentId,attended:newVal},{onConflict:'session_id,student_id'});
+      this.attendedMap[key]=newVal;
+    },
+
+    // ── TICKETS ──
+    async openTickets(c) {
+      this.activeCompany=c; this.ticketsOpen=true; this.ticketsLoading=true; this.tickets=[];
+      const {data} = await sb.from('adhoc_tickets').select('*').eq('client_id',c.id).order('created_at',{ascending:false});
+      this.tickets=data||[]; this.ticketsLoading=false;
+    },
+    async addTicket() {
+      if (!this.newTicketTitle.trim()) return;
+      const payload={client_id:this.activeCompany.id,title:this.newTicketTitle.trim(),priority:this.newTicketPriority,status:'open'};
+      if (this.newTicketDue) payload.due_date=this.newTicketDue;
+      if (this.newTicketHours) payload.est_hours=parseFloat(this.newTicketHours);
+      const {data,error} = await sb.from('adhoc_tickets').insert(payload).select().single();
+      if (error) { alert(error.message); return; }
+      this.tickets.unshift(data); this.newTicketTitle=''; this.newTicketHours=''; this.newTicketDue='';
+    },
+    async updateTicketStatus(t) {
+      await sb.from('adhoc_tickets').update({status:t.status,updated_at:new Date().toISOString()}).eq('id',t.id);
+    },
+    async updateTicketHours(t) {
+      await sb.from('adhoc_tickets').update({actual_hours:t.actual_hours||null,updated_at:new Date().toISOString()}).eq('id',t.id);
+    },
+    async deleteTicket(t) {
+      if (!confirm('Delete ticket?')) return;
+      await sb.from('adhoc_tickets').delete().eq('id',t.id);
+      this.tickets=this.tickets.filter(x=>x.id!==t.id);
+    },
+
+    formatBytes(b) { if(!b) return ''; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; },
+    formatDate(ts) { return ts ? new Date(ts).toLocaleDateString('en-JM',{day:'numeric',month:'short',year:'numeric'}) : ''; },
+    formatDateShort(d) { return d ? new Date(d+'T00:00:00').toLocaleDateString('en-JM',{day:'numeric',month:'short'}) : ''; },
+    logout() { sessionStorage.removeItem('ob_admin'); this.authed=false; this.pin=''; },
   };
 }
 </script>

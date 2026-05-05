@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JW Business Solutions — Training Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{navy:{50:'#f0f4ff',100:'#e0e8f7',600:'#2d4a8a',700:'#1e3570',800:'#152860',900:'#0d1c47'},gold:{300:'#f0d080',400:'#e8c040',500:'#c8a030',600:'#a88020'}}}}}</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <style>[x-cloak]{display:none!important}</style>
+</head>
+<body class="min-h-screen bg-gray-100 font-sans" x-data="trainingApp()" x-init="init()" x-cloak>
+
+  <!-- HEADER -->
+  <header class="bg-navy-900 text-white sticky top-0 z-40 shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-gold-500 rounded-lg flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-navy-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+        </div>
+        <div>
+          <p class="text-xs text-navy-100 font-medium uppercase tracking-wider" x-text="companyName || 'Training Portal'"></p>
+          <h1 class="text-base font-bold leading-tight">Training Dashboard</h1>
+        </div>
+      </div>
+      <button @click="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Logout</button>
+    </div>
+    <!-- Tab strip -->
+    <div class="max-w-5xl mx-auto px-4 flex gap-1 pb-0">
+      <template x-for="tab in tabs" :key="tab.key">
+        <button @click="activeTab=tab.key"
+          class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors"
+          :class="activeTab===tab.key ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
+          <span x-text="tab.label"></span>
+        </button>
+      </template>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+
+    <!-- RESOURCES TAB -->
+    <div x-show="activeTab==='resources'">
+      <div x-show="loading" class="py-16 text-center text-sm text-gray-400">Loading…</div>
+      <div x-show="!loading && resources.length===0" class="bg-white rounded-xl border border-gray-200 shadow-sm py-16 text-center text-sm text-gray-400">
+        No resources added yet. Check back soon.
+      </div>
+      <div class="grid gap-4">
+        <template x-for="r in resources" :key="r.id">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex gap-4 hover:border-navy-200 transition-colors">
+            <!-- Icon -->
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              :class="r.resource_type==='video' ? 'bg-red-100' : r.resource_type==='file' ? 'bg-blue-100' : 'bg-green-100'">
+              <svg x-show="r.resource_type==='video'" class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <svg x-show="r.resource_type==='file'" class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+              <svg x-show="r.resource_type==='link'" class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-gray-900" x-text="r.title"></p>
+              <p x-show="r.description" class="text-xs text-gray-500 mt-0.5" x-text="r.description"></p>
+              <span class="inline-block text-xs font-medium px-2 py-0.5 rounded-full mt-1"
+                :class="r.resource_type==='video' ? 'bg-red-100 text-red-700' : r.resource_type==='file' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'"
+                x-text="r.resource_type.charAt(0).toUpperCase()+r.resource_type.slice(1)"></span>
+            </div>
+            <a x-show="r.url" :href="r.url" target="_blank" rel="noopener"
+              class="shrink-0 self-center px-4 py-2 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg">
+              Open ↗
+            </a>
+            <button x-show="r.file_path && !r.url" @click="downloadResource(r)"
+              class="shrink-0 self-center px-4 py-2 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg">
+              Download
+            </button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- SESSIONS TAB -->
+    <div x-show="activeTab==='sessions'">
+      <div x-show="!loading && sessions.length===0" class="bg-white rounded-xl border border-gray-200 shadow-sm py-16 text-center text-sm text-gray-400">
+        No sessions recorded yet.
+      </div>
+      <div class="space-y-4">
+        <template x-for="s in sessions" :key="s.id">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="font-semibold text-gray-900" x-text="s.topic"></p>
+                <div class="flex items-center gap-3 mt-1">
+                  <span class="text-xs text-gray-500" x-text="formatDate(s.session_date)"></span>
+                  <span x-show="s.duration_hours" class="text-xs text-gray-400" x-text="s.duration_hours + ' hr' + (s.duration_hours!=1?'s':'')"></span>
+                </div>
+              </div>
+              <a x-show="s.recording_url" :href="s.recording_url" target="_blank"
+                class="shrink-0 text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                Recording
+              </a>
+            </div>
+            <div x-show="s.notes" class="mt-3 pt-3 border-t border-gray-100">
+              <p class="text-xs font-semibold text-gray-400 mb-1">Session Notes</p>
+              <p class="text-sm text-gray-700 whitespace-pre-line" x-text="s.notes"></p>
+            </div>
+            <!-- Attendance for this session -->
+            <div x-show="attendanceBySession[s.id] && attendanceBySession[s.id].length > 0" class="mt-3 pt-3 border-t border-gray-100">
+              <p class="text-xs font-semibold text-gray-400 mb-2">Attendance</p>
+              <div class="flex flex-wrap gap-2">
+                <template x-for="a in (attendanceBySession[s.id]||[])" :key="a.id">
+                  <span class="text-xs px-2.5 py-1 rounded-full font-medium"
+                    :class="a.attended ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-500'"
+                    x-text="(studentName(a.student_id)) + (a.attended ? ' ✓' : ' ✗')"></span>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- PROGRESS TAB -->
+    <div x-show="activeTab==='progress'">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
+          <p class="text-3xl font-bold text-navy-800" x-text="students.filter(s=>s.status==='active').length"></p>
+          <p class="text-xs text-gray-500 mt-1">Active Students</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
+          <p class="text-3xl font-bold text-green-600" x-text="students.filter(s=>s.status==='completed').length"></p>
+          <p class="text-xs text-gray-500 mt-1">Completed</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
+          <p class="text-3xl font-bold text-purple-600" x-text="sessions.length"></p>
+          <p class="text-xs text-gray-500 mt-1">Sessions Held</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+          <h3 class="font-semibold text-gray-900">Student Progress</h3>
+        </div>
+        <div x-show="students.length===0" class="py-10 text-center text-sm text-gray-400">No students enrolled yet.</div>
+        <div class="divide-y divide-gray-100">
+          <template x-for="s in students" :key="s.id">
+            <div class="px-5 py-4 flex items-center justify-between gap-4">
+              <div>
+                <p class="font-medium text-gray-900" x-text="s.full_name"></p>
+                <p x-show="s.email" class="text-xs text-gray-400" x-text="s.email"></p>
+              </div>
+              <div class="flex items-center gap-3">
+                <div>
+                  <p class="text-xs text-gray-400 text-right mb-1" x-text="studentAttendance(s.id) + '/' + sessions.length + ' sessions'"></p>
+                  <div class="w-32 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-navy-600 rounded-full" :style="'width:' + studentPct(s.id) + '%'"></div>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold px-2 py-1 rounded-full"
+                  :class="s.status==='completed' ? 'bg-green-100 text-green-700' : s.status==='dropped' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700'"
+                  x-text="s.status.charAt(0).toUpperCase()+s.status.slice(1)"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+<script>
+const sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON__);
+
+function trainingApp() {
+  return {
+    clientId: null, companyName: '', loading: true,
+    activeTab: 'resources',
+    tabs: [
+      { key: 'resources', label: 'Resources' },
+      { key: 'sessions',  label: 'Sessions'  },
+      { key: 'progress',  label: 'Progress'  },
+    ],
+    resources: [], sessions: [], students: [],
+    attendanceBySession: {}, studentMap: {},
+
+    async init() {
+      this.clientId = sessionStorage.getItem('ob_client_id');
+      this.companyName = sessionStorage.getItem('ob_company_name') || '';
+      if (!this.clientId) { window.location.href = '/onboarding-login.html'; return; }
+      await Promise.all([this.loadResources(), this.loadSessions(), this.loadStudents()]);
+      this.loading = false;
+    },
+
+    async loadResources() {
+      const { data } = await sb.from('training_resources')
+        .select('*').eq('client_id', this.clientId).order('resource_order').order('created_at');
+      this.resources = data || [];
+    },
+
+    async loadSessions() {
+      const { data: sessions } = await sb.from('training_sessions')
+        .select('*').eq('client_id', this.clientId).order('session_date', { ascending: false });
+      this.sessions = sessions || [];
+      if (this.sessions.length) {
+        const ids = this.sessions.map(s => s.id);
+        const { data: att } = await sb.from('training_attendance').select('*').in('session_id', ids);
+        if (att) att.forEach(a => {
+          if (!this.attendanceBySession[a.session_id]) this.attendanceBySession[a.session_id] = [];
+          this.attendanceBySession[a.session_id].push(a);
+        });
+      }
+    },
+
+    async loadStudents() {
+      const { data } = await sb.from('training_students')
+        .select('*').eq('client_id', this.clientId).order('full_name');
+      this.students = data || [];
+      this.studentMap = {};
+      (data||[]).forEach(s => { this.studentMap[s.id] = s.full_name; });
+    },
+
+    studentName(id) { return this.studentMap[id] || ''; },
+
+    studentAttendance(studentId) {
+      let count = 0;
+      Object.values(this.attendanceBySession).forEach(arr => {
+        arr.forEach(a => { if (a.student_id === studentId && a.attended) count++; });
+      });
+      return count;
+    },
+
+    studentPct(studentId) {
+      if (!this.sessions.length) return 0;
+      return Math.round((this.studentAttendance(studentId) / this.sessions.length) * 100);
+    },
+
+    async downloadResource(r) {
+      const { data, error } = await sb.storage.from('documents').createSignedUrl(r.file_path, 3600);
+      if (error) { alert('Cannot download: ' + error.message); return; }
+      window.open(data.signedUrl, '_blank');
+    },
+
+    formatDate(ts) {
+      if (!ts) return '';
+      return new Date(ts).toLocaleDateString('en-JM', { day: 'numeric', month: 'short', year: 'numeric' });
+    },
+    logout() { sessionStorage.clear(); window.location.href = '/onboarding-login.html'; },
+  };
+}
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</body>
+</html>

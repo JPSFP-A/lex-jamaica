@@ -68,13 +68,25 @@ function loginApp() {
     loading: false,
 
     async init() {
-      // Already logged in?
-      if (sessionStorage.getItem('ob_client_id')) {
-        window.location.href = '/onboarding.html';
+      // Already logged in? Route to correct portal
+      const existingId = sessionStorage.getItem('ob_client_id');
+      if (existingId) {
+        this.routeToPortal(sessionStorage.getItem('ob_service_type') || 'implementation');
         return;
       }
-      const { data } = await sb.from('onboarding_clients').select('id, company_name').order('company_name');
+      const { data } = await sb.from('onboarding_clients')
+        .select('id, company_name, service_type').eq('is_active', true).order('company_name');
       this.companies = data || [];
+    },
+
+    routeToPortal(serviceType) {
+      const routes = {
+        implementation: '/onboarding.html',
+        bookkeeping:    '/bookkeeping-portal.html',
+        training:       '/training-portal.html',
+        adhoc:          '/adhoc-portal.html',
+      };
+      window.location.href = routes[serviceType] || '/onboarding.html';
     },
 
     async login() {
@@ -93,7 +105,8 @@ function loginApp() {
       const company = this.companies.find(c => c.id === this.companyId);
       sessionStorage.setItem('ob_client_id', data);
       sessionStorage.setItem('ob_company_name', company?.company_name || '');
-      window.location.href = '/onboarding.html';
+      sessionStorage.setItem('ob_service_type', company?.service_type || 'implementation');
+      this.routeToPortal(company?.service_type || 'implementation');
     },
   };
 }
