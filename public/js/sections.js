@@ -304,6 +304,241 @@ general: [
   }
 ]
 
+,
+
+// ─────────────────────────────────────────────
+// MEDICAL SUPPLIES & REPAIRS template (KMP Medical)
+// ─────────────────────────────────────────────
+medical_supplies: [
+  {
+    id: 'business', title: '1. Business & Legal Structure', icon: 'building-2', color: 'blue', open: true,
+    items: [
+      { id:'trn-firm', title:'Tax Registration Number (TRN)', description:'The company\'s TRN as issued by Tax Administration Jamaica (TAJ).', type:'text', placeholder:'e.g. 123-456-789', canUpload:false },
+      { id:'biz-reg', title:'Certificate of Incorporation / Business Registration', description:'Upload your Certificate of Incorporation or business registration documents.', type:'upload', canUpload:true },
+      { id:'gct-cert', title:'GCT Registration Certificate', description:'Upload your GCT registration certificate from TAJ. Medical supplies may attract 0% or exempt status — confirm with TAJ.', type:'upload', canUpload:true },
+      { id:'gct-status', title:'GCT Registration Status', description:'Are you currently registered for GCT? Note: certain medical supplies are zero-rated or exempt under the GCT Act.', type:'select', options:['Not yet registered','Registered — Standard 15%','Registered — Zero-rated medical supplies','Registered — Mixed (some exempt, some standard)','Unsure — need to verify'], canUpload:false },
+      { id:'biz-name', title:'Business / Trading Name', description:'The full legal and trading name used on contracts and invoices.', type:'text', placeholder:'e.g. KMP Medical Supplies & Repairs Ltd.', canUpload:false },
+      { id:'year-end', title:'Financial Year End Date', description:'The last day of your accounting year.', type:'text', placeholder:'December 31', canUpload:false },
+      { id:'biz-permits', title:'Business Permits & Licences', description:'Any Ministry of Health, Bureau of Standards, or pharmaceutical distribution permits. Upload all active licences.', type:'upload', canUpload:true },
+      { id:'biz-insurance', title:'Business Insurance Policies', description:'Product liability, general liability, and premises insurance. Upload all active policies.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'bank', title: '2. Bank Accounts', icon: 'landmark', color: 'green', open: false,
+    items: [
+      { id:'bank-operating', title:'Operating Account Details', description:'Bank name, branch, and account number for your main business account.', type:'textarea', placeholder:'Bank: NCB Jamaica\nBranch: New Kingston\nAccount #: 123-456-789', canUpload:false },
+      { id:'bank-usd', title:'USD / Foreign Currency Account (if any)', description:'If you import and pay suppliers in USD, provide your USD account details.', type:'textarea', placeholder:'Bank: Scotiabank\nUSD Account #: 987-654-321\nPurpose: Supplier payments', canUpload:false },
+      { id:'bank-statements', title:'Bank Statements — 12 Months (All Accounts)', description:'PDF statements for all accounts. Required for opening balance verification.', type:'upload', canUpload:true },
+      { id:'bank-feed', title:'Online Banking — Feed Connection', description:'Can your bank connect to QBO for automatic transaction imports?', type:'text', placeholder:'Yes — NCB Online Banking', canUpload:false },
+      { id:'loan-details', title:'Business Loans / Lines of Credit', description:'Outstanding balance, interest rate, monthly payment, and lender for any business financing.', type:'textarea', placeholder:'NCB Business Loan: J$3,500,000 @ 12% — J$85,000/month', canUpload:true },
+    ]
+  },
+  {
+    id: 'inventory', title: '3. Inventory — Medical Supplies & Parts', icon: 'package', color: 'orange', open: false,
+    items: [
+      { id:'inv-note', title:'Inventory Tracking Note', description:'QBO can track inventory quantities and costs. Essential for a supplies business.', type:'info', infoHtml:'<strong>Two inventory types to track:</strong><br><br><strong>1. Medical Supplies for Sale</strong> — Products purchased for resale to hospitals, clinics, pharmacies, and retail customers. Tracked at cost (FIFO or weighted average).<br><br><strong>2. Repair Parts & Components</strong> — Parts used in equipment repairs. Tracked separately to calculate true repair job profitability.<br><br><strong>GCT Note:</strong> Some medical supplies are zero-rated (0% GCT) while others attract standard 15%. Your QBO inventory items must be set up with the correct tax code per product.', canUpload:false },
+      { id:'inv-list', title:'Current Inventory List', description:'Full product/SKU list with: item name, description, unit cost, selling price, quantity on hand, and GCT status (standard / zero-rated / exempt).', type:'upload', canUpload:true },
+      { id:'inv-value', title:'Total Inventory Value at Cost (J$)', description:'Current total value of all medical supplies stock on hand at cost price.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'inv-parts', title:'Repair Parts & Components Stock', description:'List of repair parts commonly stocked: item, quantity, unit cost. Can be spreadsheet or upload.', type:'upload', canUpload:true },
+      { id:'inv-suppliers', title:'Main Suppliers / Importers', description:'List each key supplier: company name, country of origin, payment terms, lead time, and USD/JMD currency.', type:'textarea', placeholder:'MedTech Supplies Ltd (USA) — 30-day terms — USD\nCaribbean Medical (Jamaica) — COD — JMD\nPhoenix Equipment Corp (UK) — 45-day terms — USD', canUpload:true },
+      { id:'inv-valuation', title:'Inventory Valuation Method', description:'How do you currently value your inventory?', type:'select', options:['FIFO (First In First Out) — Recommended','Weighted Average Cost','Specific Identification','Not currently tracking — starting fresh'], canUpload:false },
+    ]
+  },
+  {
+    id: 'customers', title: '4. Customers & Accounts Receivable', icon: 'briefcase', color: 'indigo', open: false,
+    items: [
+      { id:'cust-list', title:'Customer List', description:'All active customers: name, type (hospital/clinic/pharmacy/retail), contact details, credit terms, and credit limit if applicable.', type:'upload', canUpload:true },
+      { id:'cust-ar', title:'Accounts Receivable — Unpaid Invoices', description:'All invoices issued but not yet paid. Include invoice number, date, customer, amount, and age (days outstanding).', type:'upload', canUpload:true },
+      { id:'cust-ar-total', title:'Total Outstanding AR (J$)', description:'Grand total of all unpaid invoices as of today.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'cust-invoices-ytd', title:'All Invoices — Current Financial Year', description:'Complete sales invoice history for the current year. Needed for GCT return verification.', type:'upload', canUpload:true },
+      { id:'cust-deposits', title:'Customer Deposits / Advance Payments Held', description:'Any deposits received from customers not yet applied to invoices (e.g. equipment repair deposits).', type:'textarea', placeholder:'Kingston Public Hospital: J$150,000 deposit on order #1045\nNone', canUpload:false },
+      { id:'cust-bad-debts', title:'Bad Debts / Write-offs', description:'Any customer balances unlikely to be collected. Include amount and reason.', type:'textarea', placeholder:'None currently', canUpload:false },
+    ]
+  },
+  {
+    id: 'repairs', title: '5. Equipment Repair Services', icon: 'wrench', color: 'amber', open: false,
+    items: [
+      { id:'repair-note', title:'Repair Services — Revenue Recognition Note', description:'Repair jobs should be tracked separately from product sales for accurate margin reporting.', type:'info', infoHtml:'<strong>Recommended QBO setup for Repairs:</strong><br><br>Each repair job = a <strong>Project</strong> (QBO Plus/Advanced) or <strong>Sub-customer</strong> (all plans).<br><br>Track per job:<br>• Parts used (COGS — Repair Parts)<br>• Technician time (Direct Labor)<br>• Invoice amount<br>• Gross margin per job<br><br><strong>Service types to set up as items:</strong><br>• Diagnostic / Assessment Fee<br>• Labour — Per Hour<br>• Labour — Flat Rate<br>• Maintenance Contract (Monthly)<br>• Emergency Call-out', canUpload:false },
+      { id:'repair-types', title:'Equipment Types Serviced', description:'List all types of medical equipment you repair and maintain. These become service items in QBO.', type:'textarea', placeholder:'Oxygen concentrators\nInfusion pumps\nPatient monitors\nDefibrillators\nUltrasound machines\nDental chairs', canUpload:true },
+      { id:'repair-contracts', title:'Maintenance Contract Clients', description:'Clients on ongoing monthly maintenance contracts. Include client name, equipment covered, monthly fee, and contract term.', type:'textarea', placeholder:'Medical Associates: 6 oxygen concentrators — J$45,000/month — 12 months\nUniversity Hospital: Patient monitors — J$80,000/month', canUpload:true },
+      { id:'repair-technicians', title:'Repair Technicians', description:'Name, role, hourly or daily rate, employment status (employee or contractor).', type:'textarea', placeholder:'John Brown — Senior Technician — Employee — J$120,000/month\nMike Reid — Contractor — J$8,000/day', canUpload:true },
+      { id:'repair-ar', title:'Outstanding Repair Service Invoices (J$)', description:'Any repair/maintenance invoices issued but not yet paid.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'payroll', title: '6. Payroll & Statutory Obligations', icon: 'users', color: 'purple', open: false,
+    items: [
+      { id:'payroll-note', title:'Jamaican Statutory Obligations', description:'Key payroll deductions and employer contributions required by law in Jamaica.', type:'info', infoHtml:'<strong>Employee deductions (withheld from gross pay):</strong><br>• PAYE — Progressive income tax rate (remit by 14th of following month to TAJ)<br>• NIS — 3% of gross (employee) — remit to MOL<br>• NHT — 2% of gross (employee) — remit to NHT<br>• Education Tax — 2.25% (employee)<br><br><strong>Employer contributions (your cost on top of gross pay):</strong><br>• NIS — 3% of gross<br>• NHT — 3% of gross<br>• Education Tax — 3.5%<br>• Heart Trust — 3% of gross', canUpload:false },
+      { id:'payroll-employees', title:'Employee List & Pay Details', description:'Full name, TRN, NIS number, NHT number, start date, gross salary/wage, and pay frequency.', type:'upload', canUpload:true },
+      { id:'payroll-ytd', title:'Payroll Records — Current Year', description:'All payroll records from start of financial year to today. Include pay slips, PAYE summaries, and NIS/NHT schedules.', type:'upload', canUpload:true },
+      { id:'payroll-taj', title:'TAJ Employer Registration', description:'Your TAJ employer registration number (different from company TRN).', type:'text', placeholder:'e.g. 012-345-678 (Employer)', canUpload:true },
+    ]
+  },
+  {
+    id: 'expenses', title: '7. Accounts Payable & Expenses', icon: 'receipt', color: 'rose', open: false,
+    items: [
+      { id:'suppliers-ap', title:'Supplier / Vendor List', description:'Upload your vendor list — all suppliers of medical products and parts. Include name, contact, credit terms, currency.', type:'upload', canUpload:true },
+      { id:'bills-outstanding', title:'Outstanding Bills Not Yet Paid', description:'All supplier invoices received but not yet paid. Include supplier, date, amount, currency, and due date.', type:'upload', canUpload:true },
+      { id:'bills-total', title:'Total Outstanding AP (J$)', description:'Grand total of all unpaid bills as of today.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'rent-lease', title:'Office / Warehouse Lease Agreement', description:'Upload your current lease. Key details: monthly rent, lease start/end date, deposit held.', type:'upload', canUpload:true },
+      { id:'recurring-costs', title:'Recurring Monthly Operating Costs', description:'All regular monthly expenses with amounts.', type:'textarea', placeholder:'Rent/warehouse: J$120,000\nUtilities (JPS/NWC): J$35,000\nInternet & phone: J$12,000\nVehicle insurance: J$18,000\nSoftware & QBO: J$8,000', canUpload:true },
+      { id:'import-duties', title:'Import Duties & Customs Costs', description:'Any recent customs entries. Duty costs on imported medical supplies must be included in inventory cost.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'fixed-assets', title: '8. Fixed Assets', icon: 'monitor-smartphone', color: 'cyan', open: false,
+    items: [
+      { id:'fa-note', title:'About Fixed Assets', description:'Fixed assets are items with a useful life over 1 year that must be depreciated.', type:'info', infoHtml:'<strong>Depreciation rates (Jamaica straight-line):</strong><br>Computers & IT: 33.3%/yr &nbsp; Repair tools & equipment: 20%/yr<br>Office furniture: 10–20%/yr &nbsp; Motor vehicles: 20–25%/yr', canUpload:false },
+      { id:'fa-equipment', title:'Repair Equipment & Tools', description:'List each major piece of repair/diagnostic equipment: description, date purchased, purchase price.', type:'textarea', placeholder:'Digital Multimeter — Jan 2023 — J$85,000\nOscilloscope — Mar 2022 — J$220,000\nCalibration equipment — J$350,000', canUpload:true },
+      { id:'fa-computers', title:'Computers & IT Equipment', description:'Laptops, tablets, POS system, printers, etc.', type:'textarea', placeholder:'Laptop — Jan 2023 — J$150,000\nPOS System — J$95,000', canUpload:true },
+      { id:'fa-furniture', title:'Furniture & Fixtures', description:'Office furniture, shelving, display cabinets, workshop benches.', type:'textarea', placeholder:'Shelving units x4 — J$120,000\nOffice desk set — J$80,000', canUpload:true },
+      { id:'fa-vehicles', title:'Motor Vehicles / Delivery Vehicles', description:'Any vehicles owned for delivery or service calls.', type:'textarea', placeholder:'2019 Toyota HiAce delivery van — J$3,200,000', canUpload:true },
+      { id:'fa-register', title:'Fixed Asset Register', description:'If you maintain a fixed asset schedule, upload it here.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'opening-balances', title: '9. Opening Balances & Prior Period', icon: 'file-spreadsheet', color: 'emerald', open: false,
+    items: [
+      { id:'ob-financials', title:'Most Recent Financial Statements', description:'Your last set of signed accounts: Profit & Loss and Balance Sheet.', type:'upload', canUpload:true },
+      { id:'ob-trial-balance', title:'Trial Balance as of Go-Live Date', description:'Trial balance as of the day you start using QBO.', type:'upload', canUpload:true },
+      { id:'ob-go-live', title:'Proposed QBO Go-Live Date', description:'When do you want to start using QBO as your live system?', type:'date', canUpload:false },
+      { id:'ob-gct-history', title:'GCT Filing History', description:'Are all GCT returns filed and paid up to date? Upload last 3 return submissions.', type:'upload', canUpload:true },
+      { id:'ob-gct-status', title:'GCT Compliance Status', description:'Any outstanding GCT liabilities or TAJ correspondence?', type:'select', options:['All filed and paid — fully compliant','Returns filed but some balance outstanding','Some returns not yet filed','Unsure — need to check'], canUpload:true },
+      { id:'ob-prev-accountant', title:'Previous Accountant / Bookkeeper Details', description:'Contact details for your current or previous accountant.', type:'textarea', placeholder:'Name: John Smith CPA\nFirm: JBS Accounting\nEmail: john@jbs.com', canUpload:false },
+    ]
+  },
+  {
+    id: 'qbo-options', title: '10. QBO Setup & Configuration', icon: 'settings-2', color: 'slate', open: false,
+    items: [
+      { id:'qbo-note', title:'Full Chart of Accounts — Medical Supplies & Repairs', description:'Complete COA including all balance sheet and P&L accounts.', type:'info', infoHtml:'<strong>ASSETS (1000s)</strong><br>1010 Cash — Operating Account<br>1020 Cash — USD/Foreign Currency Account<br>1030 Petty Cash<br>1100 Accounts Receivable — Customers<br>1110 GCT Input Tax Recoverable<br>1200 Inventory — Medical Supplies (for resale)<br>1210 Inventory — Repair Parts &amp; Components<br>1300 Prepaid Expenses<br>1400 Security Deposits Paid<br>1500 Repair Equipment &amp; Tools<br>1510 Less: Accumulated Depreciation — Equipment<br>1520 Computers &amp; IT Equipment<br>1530 Less: Accumulated Depreciation — IT<br>1540 Furniture &amp; Fixtures<br>1550 Less: Accumulated Depreciation — Furniture<br>1560 Motor Vehicles<br>1570 Less: Accumulated Depreciation — Vehicles<br><br><strong>LIABILITIES (2000s)</strong><br>2010 Accounts Payable — Trade Suppliers<br>2020 GCT Payable (Output Tax)<br>2030 GCT Net Payable / (Recoverable)<br>2040 Income Tax Payable (Estimated)<br>2050 NIS Contributions Payable<br>2060 NHT Contributions Payable<br>2070 Education Tax Payable<br>2080 PAYE Payable<br>2090 Customer Deposits / Advance Payments Held<br>2100 Accrued Liabilities<br>2200 Loans Payable — Current Portion<br>2300 Loans Payable — Long Term<br><br><strong>EQUITY (3000s)</strong><br>3010 Owner\'s Capital / Share Capital<br>3020 Retained Earnings — Prior Years<br>3030 Owner\'s Draw / Distributions<br>3040 Current Year Net Income (auto-calculated)<br><br><strong>INCOME (4000s)</strong><br>4010 Medical Supply Sales — Hospitals &amp; Health Centres<br>4020 Medical Supply Sales — Clinics &amp; Doctors<br>4030 Medical Supply Sales — Pharmacies<br>4040 Medical Supply Sales — Retail / Walk-in<br>4050 Equipment Repair Services<br>4060 Equipment Maintenance Contracts (Monthly)<br>4070 Installation &amp; Commissioning Services<br>4080 Freight &amp; Delivery Income<br><br><strong>COST OF GOODS SOLD (5000s)</strong><br>5010 Cost of Medical Supplies Sold<br>5020 Repair Parts &amp; Components Used<br>5030 Direct Labor — Repair Technicians<br>5040 Freight, Import Duties &amp; Customs Costs<br>5050 Warranty &amp; Returns<br><br><strong>OPERATING EXPENSES (6000s)</strong><br>6010 Office / Warehouse Rent<br>6020 Utilities &amp; Internet (JPS, NWC, Flow)<br>6030 Salaries &amp; Wages — Admin<br>6040 Employer Statutory Contributions (NIS/NHT/Ed Tax/Heart)<br>6050 Business Insurance (Liability, Property)<br>6060 Vehicle &amp; Delivery Expenses<br>6070 Office Supplies &amp; Stationery<br>6080 IT &amp; Software Subscriptions<br>6090 Marketing &amp; Advertising<br>6100 Professional Fees (Accountant, Legal)<br>6110 Bank Charges &amp; Interest<br>6120 Staff Training &amp; Development<br>6130 Depreciation Expense', canUpload:false },
+      {
+        id:'qbo-tracking-method', title:'Choose Your Tracking Method', description:'Select the reporting approach that best fits your business.',
+        type:'qbo-options', canUpload:false,
+        options: [
+          { id:'subcustomer', label:'Option A — Customer / Job Tracking', description:'Each customer (hospital, clinic, pharmacy) = Customer in QBO. Each repair job or large order = Sub-customer / Project. Track revenue and gross margin per customer.', tags:['Best for billing','All QBO plans','Per-customer reporting'] },
+          { id:'class', label:'Option B — Department Tracking (Sales vs Repairs)', description:'Tag every transaction as either "Product Sales" or "Repair Services". Run separate P&L for each business line — see which is more profitable.', tags:['Business line P&L','Requires Essentials+'] },
+          { id:'both', label:'Option C — Both Customer + Department (Recommended)', description:'Track by customer AND by business line simultaneously. See which customer type (hospital vs clinic vs pharmacy) and which service (sales vs repairs) drives the most profit.', tags:['Recommended','Full reporting','Requires Plus'] }
+        ]
+      },
+      { id:'qbo-plan', title:'Current QBO Plan', description:'Which QuickBooks Online plan are you on or planning to subscribe to? Note: Inventory tracking requires Plus or Advanced.', type:'select', options:['Simple Start (no inventory)','Essentials','Plus — Recommended (includes inventory)','Advanced (includes Projects)','Not yet subscribed — help me choose'], canUpload:false },
+      { id:'qbo-departments', title:'Your Business Lines / Departments', description:'Confirm or adjust the department names. These will become Classes in QBO.', type:'textarea', placeholder:'Product Sales — Medical Supplies\nRepair Services\nMaintenance Contracts\nInstallation', canUpload:false },
+    ]
+  }
+],
+
+// ─────────────────────────────────────────────
+// HR CONSULTANCY template (Restore One)
+// ─────────────────────────────────────────────
+hr_consultancy: [
+  {
+    id: 'business', title: '1. Business & Legal Structure', icon: 'building-2', color: 'blue', open: true,
+    items: [
+      { id:'trn-firm', title:'Tax Registration Number (TRN)', description:'The firm\'s TRN as issued by Tax Administration Jamaica (TAJ).', type:'text', placeholder:'e.g. 123-456-789', canUpload:false },
+      { id:'biz-reg', title:'Certificate of Incorporation / Business Registration', description:'Upload your Certificate of Incorporation or sole trader registration documents.', type:'upload', canUpload:true },
+      { id:'gct-cert', title:'GCT Registration Certificate', description:'Upload your GCT registration certificate from TAJ. HR consulting services attract standard 15% GCT.', type:'upload', canUpload:true },
+      { id:'gct-status', title:'GCT Registration Status', description:'Are you currently registered for GCT?', type:'select', options:['Not yet registered','Standard rate — 15% (on all consulting fees)','Unsure — need to check threshold'], canUpload:false },
+      { id:'biz-name', title:'Business / Trading Name', description:'Full legal and trading name used on proposals and invoices.', type:'text', placeholder:'e.g. Restore One HR Consultancy Ltd.', canUpload:false },
+      { id:'year-end', title:'Financial Year End Date', description:'The last day of your accounting year.', type:'text', placeholder:'December 31', canUpload:false },
+      { id:'prof-body', title:'Professional Body Memberships', description:'SHRM, HRMAJ, or other HR professional body membership details. Upload certificates.', type:'upload', canUpload:true },
+      { id:'biz-insurance', title:'Professional Indemnity & Business Insurance', description:'Policy details for professional indemnity (errors & omissions) and general business insurance.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'bank', title: '2. Bank Accounts', icon: 'landmark', color: 'green', open: false,
+    items: [
+      { id:'bank-operating', title:'Operating Account Details', description:'Bank name, branch, and account number for your main business account.', type:'textarea', placeholder:'Bank: NCB Jamaica\nBranch: New Kingston\nAccount #: 123-456-789', canUpload:false },
+      { id:'bank-statements', title:'Bank Statements — 12 Months', description:'PDF statements for all business accounts. Required for opening balance verification.', type:'upload', canUpload:true },
+      { id:'bank-feed', title:'Online Banking — Feed Connection', description:'Can your bank connect to QBO for automatic transaction imports?', type:'text', placeholder:'Yes — NCB Online Banking', canUpload:false },
+      { id:'loan-details', title:'Business Loans / Overdraft Facilities', description:'Outstanding balance, interest rate, monthly payment, and lender for any business financing.', type:'textarea', placeholder:'None currently / NCB overdraft: J$500,000 @ 18%', canUpload:true },
+    ]
+  },
+  {
+    id: 'clients', title: '3. Clients & Accounts Receivable', icon: 'briefcase', color: 'indigo', open: false,
+    items: [
+      { id:'client-note', title:'Client & Revenue Types Note', description:'HR consulting revenue typically comes from several distinct service streams — set each up separately in QBO.', type:'info', infoHtml:'<strong>Revenue streams to track separately:</strong><br><br>• <strong>Consulting Retainers</strong> — Monthly fixed fees for ongoing HR advisory services<br>• <strong>Project / Engagement Fees</strong> — One-time fees for specific projects (policy development, org design, culture audits)<br>• <strong>Recruitment Fees</strong> — Placement fees (typically 10–20% of first-year salary)<br>• <strong>Training & Workshops</strong> — Per-session or per-participant fees<br>• <strong>Payroll Management Services</strong> — Monthly fee to manage client payroll<br><br>Each stream has different margin profiles — tracking separately lets you see which is most profitable.', canUpload:false },
+      { id:'client-list', title:'Active Client List', description:'All current clients: company name, contact person, service type, billing terms (monthly retainer, project, etc.), and current monthly/project value.', type:'upload', canUpload:true },
+      { id:'client-ar', title:'Accounts Receivable — Unpaid Invoices', description:'All invoices issued but not yet paid. Include invoice number, date, client, service type, amount, and age.', type:'upload', canUpload:true },
+      { id:'client-ar-total', title:'Total Outstanding AR (J$)', description:'Grand total of all unpaid invoices as of today.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'client-retainers', title:'Monthly Retainer Agreements', description:'Upload signed retainer agreements for all clients on monthly arrangements.', type:'upload', canUpload:true },
+      { id:'client-invoices-ytd', title:'All Invoices — Current Financial Year', description:'Complete invoicing history for the current year.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'services', title: '4. Service Items & Pricing', icon: 'list-checks', color: 'amber', open: false,
+    items: [
+      { id:'svc-note', title:'QBO Service Items Setup', description:'Each type of service you provide should be a separate "item" in QBO — this drives accurate revenue reporting.', type:'info', infoHtml:'<strong>Recommended service items to create in QBO:</strong><br><br>• HR Advisory — Hourly Rate<br>• HR Retainer — Monthly Fee<br>• Recruitment — Placement Fee<br>• Recruitment — Retained Search (upfront + success)<br>• Training / Workshop — Per Session<br>• Training / Workshop — Per Participant<br>• Payroll Management — Monthly<br>• HR Policy Development — Project Fee<br>• Organisational Design — Project Fee<br>• Employee Relations — Per Engagement<br>• Exit Interview / Offboarding — Per Employee<br>• HR Compliance Audit — Fixed Fee', canUpload:false },
+      { id:'svc-list', title:'Your Current Services & Rates', description:'List all services you offer with your current pricing. This is used to set up your QBO price list.', type:'textarea', placeholder:'HR Retainer: J$85,000/month\nRecruitment (manager level): 15% of first-year salary\nHalf-day workshop: J$120,000 flat\nFull-day workshop (up to 20 pax): J$220,000\nPayroll management: J$35,000/month (up to 20 employees)', canUpload:false },
+      { id:'svc-proposals', title:'Standard Proposal / Engagement Letter Templates', description:'Upload your standard proposal template and engagement letter. We\'ll ensure QBO invoices match your proposal format.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'subcontractors', title: '5. Associate Consultants & Subcontractors', icon: 'users', color: 'purple', open: false,
+    items: [
+      { id:'sub-note', title:'Associates vs. Employees', description:'Associate consultants are typically contracted, not employed. Understand the distinction for tax purposes.', type:'info', infoHtml:'<strong>Associate / Subcontracted Consultant:</strong><br>• Payments classified as Contractor Fees (expense, not payroll)<br>• No PAYE/NIS/NHT withholding required IF genuinely self-employed<br>• Obtain their TRN and retain signed contract<br>• Consider withholding tax obligations if applicable<br><br><strong>Employed Staff:</strong><br>• Full PAYE, NIS, NHT, Ed Tax, Heart Trust obligations<br>• Statutory contributions due by 14th of following month', canUpload:false },
+      { id:'sub-list', title:'Associate Consultants List', description:'All associates/subcontractors: full name, TRN, specialisation, rate (daily/hourly/project), and engagement status.', type:'textarea', placeholder:'Mary Brown — TRN: 123-456 — Leadership & Culture — J$35,000/day\nPaul Smith — TRN: 987-654 — Compensation & Benefits — J$40,000/day\nCareer Solutions Ltd — Recruitment sub — 30% of placement fee', canUpload:true },
+      { id:'sub-agreements', title:'Subcontractor Agreements', description:'Upload signed agreements for all associate consultants.', type:'upload', canUpload:true },
+      { id:'sub-ytd', title:'Payments to Associates — Current Year', description:'Total paid to each associate/subcontractor from start of financial year to today.', type:'textarea', placeholder:'Mary Brown: J$350,000\nPaul Smith: J$280,000', canUpload:true },
+    ]
+  },
+  {
+    id: 'payroll', title: '6. Payroll & Statutory Obligations', icon: 'landmark', color: 'rose', open: false,
+    items: [
+      { id:'payroll-note', title:'Jamaican Statutory Obligations', description:'Required payroll deductions and employer contributions.', type:'info', infoHtml:'<strong>Employee deductions (withheld from gross pay — remit by 14th):</strong><br>• PAYE — Progressive income tax rate → TAJ<br>• NIS — 3% of gross → Ministry of Labour<br>• NHT — 2% of gross → National Housing Trust<br>• Education Tax — 2.25%<br><br><strong>Employer contributions (your additional cost):</strong><br>• NIS — 3% employer share<br>• NHT — 3% employer share<br>• Education Tax — 3.5% employer share<br>• Heart Trust — 3% of gross', canUpload:false },
+      { id:'payroll-employees', title:'Employee List & Pay Details', description:'Full name, TRN, NIS number, NHT number, start date, gross salary, and pay frequency for each employee.', type:'upload', canUpload:true },
+      { id:'payroll-ytd', title:'Payroll Records — Current Year', description:'All payroll records from start of financial year. Include pay slips and statutory payment schedules.', type:'upload', canUpload:true },
+      { id:'payroll-taj', title:'TAJ Employer Registration Number', description:'Your TAJ employer registration number (different from company TRN). Required to file PAYE returns.', type:'text', placeholder:'e.g. 012-345-678 (Employer)', canUpload:true },
+    ]
+  },
+  {
+    id: 'expenses', title: '7. Accounts Payable & Expenses', icon: 'receipt', color: 'orange', open: false,
+    items: [
+      { id:'suppliers', title:'Supplier / Vendor List', description:'All regular vendors: office supplies, software subscriptions, training materials, venue hire. Include name, contact, and type.', type:'upload', canUpload:true },
+      { id:'bills-outstanding', title:'Outstanding Bills Not Yet Paid', description:'All supplier invoices received but not yet paid.', type:'upload', canUpload:true },
+      { id:'bills-total', title:'Total Outstanding AP (J$)', description:'Grand total of all unpaid bills as of today.', type:'number', placeholder:'0.00', canUpload:false },
+      { id:'rent-lease', title:'Office Lease Agreement', description:'Upload your current office lease. Key details: monthly rent, lease start/end, deposit held.', type:'upload', canUpload:true },
+      { id:'recurring-costs', title:'Recurring Monthly Operating Costs', description:'All regular monthly expenses with amounts.', type:'textarea', placeholder:'Office rent: J$95,000\nInternet & phone: J$12,000\nSoftware (HR tools, QBO, Microsoft 365): J$25,000\nProfessional development / SHRM: J$8,000', canUpload:true },
+      { id:'receipts-ytd', title:'Expense Receipts — Current Financial Year', description:'All receipts and invoices for business expenses paid. Needed for GCT input credit claims.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'fixed-assets', title: '8. Fixed Assets', icon: 'monitor-smartphone', color: 'cyan', open: false,
+    items: [
+      { id:'fa-note', title:'About Fixed Assets', description:'Fixed assets are items with a useful life over 1 year that must be depreciated.', type:'info', infoHtml:'<strong>Depreciation rates (Jamaica straight-line):</strong><br>Computers & IT: 33.3%/yr &nbsp; Office furniture: 10–20%/yr &nbsp; Motor vehicles: 20–25%/yr', canUpload:false },
+      { id:'fa-computers', title:'Computers & IT Equipment', description:'Laptops, tablets, projectors, video conferencing equipment, etc.', type:'textarea', placeholder:'MacBook Pro — Jan 2024 — J$280,000\nProjector — J$95,000\nWebcam/Mic setup — J$45,000', canUpload:true },
+      { id:'fa-furniture', title:'Office Furniture & Equipment', description:'Desks, chairs, bookshelves, whiteboards, training room furniture.', type:'textarea', placeholder:'Training room chairs x10 — J$150,000\nOffice desk set — J$95,000', canUpload:true },
+      { id:'fa-vehicles', title:'Motor Vehicles', description:'Any vehicles owned for business use.', type:'textarea', placeholder:'None / 2021 Honda Civic — J$3,500,000', canUpload:true },
+      { id:'fa-register', title:'Fixed Asset Register', description:'If you maintain a fixed asset schedule, upload it here.', type:'upload', canUpload:true },
+    ]
+  },
+  {
+    id: 'opening-balances', title: '9. Opening Balances & Prior Period', icon: 'file-spreadsheet', color: 'emerald', open: false,
+    items: [
+      { id:'ob-financials', title:'Most Recent Financial Statements', description:'Your last set of signed accounts: Profit & Loss and Balance Sheet.', type:'upload', canUpload:true },
+      { id:'ob-trial-balance', title:'Trial Balance as of Go-Live Date', description:'Trial balance as of the day you start using QBO.', type:'upload', canUpload:true },
+      { id:'ob-go-live', title:'Proposed QBO Go-Live Date', description:'When do you want to start using QBO as your live system?', type:'date', canUpload:false },
+      { id:'ob-gct-status', title:'GCT Compliance Status', description:'Any outstanding GCT liabilities or TAJ correspondence?', type:'select', options:['All filed and paid — fully compliant','Returns filed but some balance outstanding','Some returns not yet filed','Unsure — need to check'], canUpload:true },
+      { id:'ob-prev-accountant', title:'Previous Accountant / Bookkeeper Details', description:'Contact details for your current or previous accountant.', type:'textarea', placeholder:'Name: John Smith CPA\nFirm: JBS Accounting\nEmail: john@jbs.com', canUpload:false },
+    ]
+  },
+  {
+    id: 'qbo-options', title: '10. QBO Setup & Configuration', icon: 'settings-2', color: 'slate', open: false,
+    items: [
+      { id:'qbo-note', title:'Full Chart of Accounts — HR Consultancy', description:'Complete COA including all balance sheet and P&L accounts.', type:'info', infoHtml:'<strong>ASSETS (1000s)</strong><br>1010 Cash — Operating Account<br>1020 Petty Cash<br>1100 Accounts Receivable — Clients<br>1110 GCT Input Tax Recoverable<br>1200 Prepaid Expenses (Insurance, Software)<br>1300 Security Deposits Paid<br>1400 Computers &amp; IT Equipment<br>1410 Less: Accumulated Depreciation — IT<br>1420 Office Furniture &amp; Equipment<br>1430 Less: Accumulated Depreciation — Furniture<br>1440 Motor Vehicles<br>1450 Less: Accumulated Depreciation — Vehicles<br><br><strong>LIABILITIES (2000s)</strong><br>2010 Accounts Payable — Trade<br>2020 GCT Payable (Output Tax)<br>2030 GCT Net Payable / (Recoverable)<br>2040 Income Tax Payable (Estimated)<br>2050 NIS Contributions Payable<br>2060 NHT Contributions Payable<br>2070 Education Tax Payable<br>2080 PAYE Payable<br>2090 Deferred Revenue — Retainer Fees Received in Advance<br>2100 Accrued Liabilities<br>2200 Loans Payable — Current Portion<br>2300 Loans Payable — Long Term<br><br><strong>EQUITY (3000s)</strong><br>3010 Owner\'s Capital / Share Capital<br>3020 Retained Earnings — Prior Years<br>3030 Owner\'s Draw / Distributions<br>3040 Current Year Net Income (auto-calculated)<br><br><strong>INCOME (4000s)</strong><br>4010 HR Consulting Fees — Project / Engagement<br>4020 HR Retainer Fees — Monthly<br>4030 Recruitment &amp; Placement Fees<br>4040 Training &amp; Workshop Fees<br>4050 HR Policy &amp; Compliance Advisory<br>4060 Payroll Management Services<br>4070 Employee Relations &amp; IR Advisory<br>4080 Other Professional Services<br><br><strong>COST OF REVENUE (5000s)</strong><br>5010 Subcontracted Consultant Fees<br>5020 Training Materials &amp; Resources<br>5030 Assessment Tools &amp; Licensing<br>5040 Venue &amp; Equipment Hire (client projects)<br><br><strong>OPERATING EXPENSES (6000s)</strong><br>6010 Office Rent<br>6020 Utilities &amp; Internet<br>6030 Staff Salaries &amp; Wages<br>6040 Employer Statutory Contributions (NIS/NHT/Ed Tax/Heart)<br>6050 Business &amp; Professional Indemnity Insurance<br>6060 Professional Development (SHRM, HRMAJ, CPD)<br>6070 Office Supplies &amp; Stationery<br>6080 IT &amp; Software Subscriptions (HR Tools, Microsoft 365)<br>6090 Marketing &amp; Business Development<br>6100 Professional Fees (Accountant, Legal)<br>6110 Bank Charges &amp; Interest<br>6120 Travel &amp; Entertainment<br>6130 Depreciation Expense', canUpload:false },
+      {
+        id:'qbo-tracking-method', title:'Choose Your Tracking Method', description:'Select the reporting approach that best fits your consultancy.',
+        type:'qbo-options', canUpload:false,
+        options: [
+          { id:'subcustomer', label:'Option A — Client / Project Tracking', description:'Each client = Customer in QBO. Each engagement or project = Sub-customer. Track fees, costs, and margin per client and per engagement.', tags:['Per-client P&L','All QBO plans','Engagement profitability'] },
+          { id:'class', label:'Option B — Service Line Tracking', description:'Tag every transaction as Consulting, Recruitment, Training, or Payroll Management. Run a separate P&L for each service line to see which is most profitable.', tags:['Service line P&L','Requires Essentials+'] },
+          { id:'both', label:'Option C — Both Client + Service Line (Recommended)', description:'Track by client AND by service line simultaneously. See which client is most profitable AND which service line drives the best margin.', tags:['Recommended','Full BI reporting','Requires Plus'] }
+        ]
+      },
+      { id:'qbo-plan', title:'Current QBO Plan', description:'Which QuickBooks Online plan are you on or planning to subscribe to?', type:'select', options:['Simple Start','Essentials','Plus — Recommended','Advanced (includes Projects)','Not yet subscribed — help me choose'], canUpload:false },
+      { id:'qbo-service-lines', title:'Your Service Lines / Departments', description:'Confirm or adjust the service line names. These will become Classes in QBO.', type:'textarea', placeholder:'HR Consulting\nRecruitment & Placement\nTraining & Workshops\nPayroll Management Services', canUpload:false },
+    ]
+  }
+]
+
 }; // end SECTION_TEMPLATES
 
 // Backwards compatibility alias
@@ -333,6 +568,30 @@ const COA_MAPPINGS = {
     'fixed-assets':  ['1500','1510','1520','1530','1600','1610','1700','1710','6100'],
     'opening-balances': ['3020','3040','2040'],
     'qbo-options':   [],
+  },
+  medical_supplies: {
+    business:        ['1010','2020','2030','3010','3020'],
+    bank:            ['1010','1020','2200','2300','6110'],
+    inventory:       ['1200','1210','5010','5020','5040'],
+    customers:       ['1100','2090','4010','4020','4030','4040'],
+    repairs:         ['4050','4060','4070','5030'],
+    payroll:         ['2050','2060','2070','2080','6030','6040'],
+    expenses:        ['2010','2100','6050','6060','6070','6080','6090','6100'],
+    'fixed-assets':  ['1500','1510','1520','1530','1540','1550','1560','1570','6130'],
+    'opening-balances': ['3020','3040','2040'],
+    'qbo-options':   ['4010','4020','4030','4040','4050','4060'],
+  },
+  hr_consultancy: {
+    business:        ['1010','2020','2030','3010','3020'],
+    bank:            ['1010','2200','2300','6110'],
+    clients:         ['1100','2090','4010','4020','4030','4040'],
+    services:        ['4010','4020','4030','4040','4050','4060','4070'],
+    subcontractors:  ['5010','5020','5030','5040'],
+    payroll:         ['2050','2060','2070','2080','6030','6040'],
+    expenses:        ['2010','2100','6050','6060','6070','6080','6090','6100'],
+    'fixed-assets':  ['1400','1410','1420','1430','1440','1450','6130'],
+    'opening-balances': ['3020','3040','2040'],
+    'qbo-options':   ['4010','4020','4030','4040','4050','4060'],
   },
 };
 

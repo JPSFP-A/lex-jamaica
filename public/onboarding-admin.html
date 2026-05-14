@@ -79,6 +79,8 @@
               <option value="general">General</option>
               <option value="law_firm">Law Firm</option>
               <option value="construction_rental">Construction &amp; Rental</option>
+              <option value="medical_supplies">Medical Supplies &amp; Repairs</option>
+              <option value="hr_consultancy">HR Consultancy</option>
             </select>
           </div>
           <div class="flex-1 min-w-[200px]">
@@ -152,7 +154,7 @@
                         'bg-amber-50 text-amber-700': c.template==='construction_rental',
                         'bg-gray-100 text-gray-500':  !c.template||c.template==='general'
                       }"
-                      x-text="c.template==='law_firm'?'Law Firm':c.template==='construction_rental'?'Construction & Rental':'General'"></span>
+                      x-text="c.template==='law_firm'?'Law Firm':c.template==='construction_rental'?'Construction & Rental':c.template==='medical_supplies'?'Medical Supplies':c.template==='hr_consultancy'?'HR Consultancy':'General'"></span>
                     <span x-show="c.partner_name" class="text-xs px-1.5 py-0.5 rounded bg-gold-50 text-gold-700 font-medium" x-text="c.partner_name"></span>
                     <span x-show="!c.is_active" class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">disabled</span>
                   </div>
@@ -920,6 +922,109 @@ const COA_CONSTRUCTION = [
   ]},
 ];
 
+const COA_MEDICAL = [
+  { label: 'ASSETS', accounts: [
+    {code:'1010',name:'Cash — Operating Account'},{code:'1020',name:'Cash — USD/Foreign Currency Account'},
+    {code:'1030',name:'Petty Cash'},
+    {code:'1100',name:'Accounts Receivable — Customers'},{code:'1110',name:'GCT Input Tax Recoverable'},
+    {code:'1200',name:'Inventory — Medical Supplies (for resale)'},{code:'1210',name:'Inventory — Repair Parts & Components'},
+    {code:'1300',name:'Prepaid Expenses'},{code:'1400',name:'Security Deposits Paid'},
+    {code:'1500',name:'Repair Equipment & Tools'},{code:'1510',name:'Less: Accum. Depreciation — Equipment'},
+    {code:'1520',name:'Computers & IT Equipment'},{code:'1530',name:'Less: Accum. Depreciation — IT'},
+    {code:'1540',name:'Furniture & Fixtures'},{code:'1550',name:'Less: Accum. Depreciation — Furniture'},
+    {code:'1560',name:'Motor Vehicles'},{code:'1570',name:'Less: Accum. Depreciation — Vehicles'},
+  ]},
+  { label: 'LIABILITIES', accounts: [
+    {code:'2010',name:'Accounts Payable — Trade Suppliers'},{code:'2020',name:'GCT Payable (Output Tax)'},
+    {code:'2030',name:'GCT Net Payable / (Recoverable)'},{code:'2040',name:'Income Tax Payable (Estimated)'},
+    {code:'2050',name:'NIS Contributions Payable'},{code:'2060',name:'NHT Contributions Payable'},
+    {code:'2070',name:'Education Tax Payable'},{code:'2080',name:'PAYE Payable'},
+    {code:'2090',name:'Customer Deposits / Advance Payments Held'},{code:'2100',name:'Accrued Liabilities'},
+    {code:'2200',name:'Loans Payable — Current Portion'},{code:'2300',name:'Loans Payable — Long Term'},
+  ]},
+  { label: 'EQUITY', accounts: [
+    {code:'3010',name:"Owner's Capital / Share Capital"},{code:'3020',name:'Retained Earnings — Prior Years'},
+    {code:'3030',name:"Owner's Draw / Distributions"},{code:'3040',name:'Current Year Net Income (auto)'},
+  ]},
+  { label: 'INCOME', accounts: [
+    {code:'4010',name:'Medical Supply Sales — Hospitals & Health Centres'},
+    {code:'4020',name:'Medical Supply Sales — Clinics & Doctors'},
+    {code:'4030',name:'Medical Supply Sales — Pharmacies'},
+    {code:'4040',name:'Medical Supply Sales — Retail / Walk-in'},
+    {code:'4050',name:'Equipment Repair Services'},
+    {code:'4060',name:'Equipment Maintenance Contracts (Monthly)'},
+    {code:'4070',name:'Installation & Commissioning Services'},
+    {code:'4080',name:'Freight & Delivery Income'},
+  ]},
+  { label: 'COST OF GOODS SOLD', accounts: [
+    {code:'5010',name:'Cost of Medical Supplies Sold'},
+    {code:'5020',name:'Repair Parts & Components Used'},
+    {code:'5030',name:'Direct Labor — Repair Technicians'},
+    {code:'5040',name:'Freight, Import Duties & Customs Costs'},
+    {code:'5050',name:'Warranty & Returns'},
+  ]},
+  { label: 'OPERATING EXPENSES', accounts: [
+    {code:'6010',name:'Office / Warehouse Rent'},{code:'6020',name:'Utilities & Internet'},
+    {code:'6030',name:'Salaries & Wages — Admin'},{code:'6040',name:'Employer Statutory Contributions'},
+    {code:'6050',name:'Business Insurance (Liability, Property)'},{code:'6060',name:'Vehicle & Delivery Expenses'},
+    {code:'6070',name:'Office Supplies & Stationery'},{code:'6080',name:'IT & Software Subscriptions'},
+    {code:'6090',name:'Marketing & Advertising'},{code:'6100',name:'Professional Fees (Accountant, Legal)'},
+    {code:'6110',name:'Bank Charges & Interest'},{code:'6120',name:'Staff Training & Development'},
+    {code:'6130',name:'Depreciation Expense'},
+  ]},
+];
+
+const COA_HR = [
+  { label: 'ASSETS', accounts: [
+    {code:'1010',name:'Cash — Operating Account'},{code:'1020',name:'Petty Cash'},
+    {code:'1100',name:'Accounts Receivable — Clients'},{code:'1110',name:'GCT Input Tax Recoverable'},
+    {code:'1200',name:'Prepaid Expenses (Insurance, Software)'},{code:'1300',name:'Security Deposits Paid'},
+    {code:'1400',name:'Computers & IT Equipment'},{code:'1410',name:'Less: Accum. Depreciation — IT'},
+    {code:'1420',name:'Office Furniture & Equipment'},{code:'1430',name:'Less: Accum. Depreciation — Furniture'},
+    {code:'1440',name:'Motor Vehicles'},{code:'1450',name:'Less: Accum. Depreciation — Vehicles'},
+  ]},
+  { label: 'LIABILITIES', accounts: [
+    {code:'2010',name:'Accounts Payable — Trade'},{code:'2020',name:'GCT Payable (Output Tax)'},
+    {code:'2030',name:'GCT Net Payable / (Recoverable)'},{code:'2040',name:'Income Tax Payable (Estimated)'},
+    {code:'2050',name:'NIS Contributions Payable'},{code:'2060',name:'NHT Contributions Payable'},
+    {code:'2070',name:'Education Tax Payable'},{code:'2080',name:'PAYE Payable'},
+    {code:'2090',name:'Deferred Revenue — Retainer Fees Received in Advance'},
+    {code:'2100',name:'Accrued Liabilities'},
+    {code:'2200',name:'Loans Payable — Current Portion'},{code:'2300',name:'Loans Payable — Long Term'},
+  ]},
+  { label: 'EQUITY', accounts: [
+    {code:'3010',name:"Owner's Capital / Share Capital"},{code:'3020',name:'Retained Earnings — Prior Years'},
+    {code:'3030',name:"Owner's Draw / Distributions"},{code:'3040',name:'Current Year Net Income (auto)'},
+  ]},
+  { label: 'INCOME', accounts: [
+    {code:'4010',name:'HR Consulting Fees — Project / Engagement'},
+    {code:'4020',name:'HR Retainer Fees — Monthly'},
+    {code:'4030',name:'Recruitment & Placement Fees'},
+    {code:'4040',name:'Training & Workshop Fees'},
+    {code:'4050',name:'HR Policy & Compliance Advisory'},
+    {code:'4060',name:'Payroll Management Services'},
+    {code:'4070',name:'Employee Relations & IR Advisory'},
+    {code:'4080',name:'Other Professional Services'},
+  ]},
+  { label: 'COST OF REVENUE', accounts: [
+    {code:'5010',name:'Subcontracted Consultant Fees'},
+    {code:'5020',name:'Training Materials & Resources'},
+    {code:'5030',name:'Assessment Tools & Licensing'},
+    {code:'5040',name:'Venue & Equipment Hire (client projects)'},
+  ]},
+  { label: 'OPERATING EXPENSES', accounts: [
+    {code:'6010',name:'Office Rent'},{code:'6020',name:'Utilities & Internet'},
+    {code:'6030',name:'Staff Salaries & Wages'},{code:'6040',name:'Employer Statutory Contributions'},
+    {code:'6050',name:'Business & Professional Indemnity Insurance'},
+    {code:'6060',name:'Professional Development (SHRM, HRMAJ, CPD)'},
+    {code:'6070',name:'Office Supplies & Stationery'},{code:'6080',name:'IT & Software Subscriptions'},
+    {code:'6090',name:'Marketing & Business Development'},
+    {code:'6100',name:'Professional Fees (Accountant, Legal)'},
+    {code:'6110',name:'Bank Charges & Interest'},{code:'6120',name:'Travel & Entertainment'},
+    {code:'6130',name:'Depreciation Expense'},
+  ]},
+];
+
 function adminApp() {
   return {
     authed: false, pin: '', pinError: '',
@@ -1177,7 +1282,10 @@ function adminApp() {
     // ── COA ──
     async openCOA(c) {
       this.activeCompany=c; this.coaOpen=true; this.coaLoading=true; this.coaUnlocked=new Set();
-      this.coaGroups = c.template==='construction_rental' ? COA_CONSTRUCTION : COA_LAW_FIRM;
+      this.coaGroups = c.template==='construction_rental' ? COA_CONSTRUCTION
+        : c.template==='medical_supplies' ? COA_MEDICAL
+        : c.template==='hr_consultancy'   ? COA_HR
+        : COA_LAW_FIRM;
       // Figure out which sections are "complete" (all non-info items done)
       var secs = SECTION_TEMPLATES[c.template||'law_firm']||SECTION_TEMPLATES.law_firm;
       const {data:responses} = await sb.from('onboarding_responses').select('item_id,is_complete').eq('client_id',c.id);
