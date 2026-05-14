@@ -694,9 +694,9 @@
             <div x-show="bkActiveTasks.length===0" class="py-6 text-center text-sm text-gray-400">No tasks for this period.</div>
           </div>
           <!-- Period notes -->
-          <div class="mt-4">
+          <div x-show="bkSelectedPeriod" class="mt-4">
             <label class="block text-xs font-medium text-gray-500 mb-1">Period Note (visible to client)</label>
-            <textarea x-model="bkSelectedPeriod.notes" rows="2" placeholder="Optional note for this period…"
+            <textarea x-model="bkSelectedPeriod && bkSelectedPeriod.notes" rows="2" placeholder="Optional note for this period…"
               class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none resize-none"></textarea>
             <button @click="savePeriodNote()" class="mt-2 px-3 py-1.5 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg">Save Note</button>
           </div>
