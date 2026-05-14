@@ -215,6 +215,7 @@
                     <button @click="openTickets(c)" class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold rounded-lg">Tickets</button>
                   </template>
                   <!-- All types -->
+                  <button @click="openEdit(c)" class="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg">Edit</button>
                   <button @click="viewCompany(c)" class="px-3 py-1.5 bg-navy-50 hover:bg-navy-100 text-navy-800 text-xs font-semibold rounded-lg">Open</button>
                   <button @click="toggleActive(c)"
                     :class="c.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'"
@@ -477,11 +478,11 @@
       <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
         <div>
           <h2 class="font-bold text-gray-900" x-text="'Chart of Accounts — '+(activeCompany?activeCompany.company_name:'')"></h2>
-          <p class="text-xs text-gray-400 mt-0.5">Accounts highlighted as sections are completed</p>
+          <p class="text-xs text-gray-400 mt-0.5">Green = section complete. Add custom accounts below.</p>
         </div>
         <button @click="coaOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
       </div>
-      <div class="overflow-y-auto flex-1 px-6 py-4">
+      <div class="overflow-y-auto flex-1 px-6 py-4 space-y-4">
         <div x-show="coaLoading" class="py-10 text-center text-sm text-gray-400">Loading…</div>
         <template x-if="!coaLoading">
           <div class="space-y-4">
@@ -498,18 +499,105 @@
                       <span class="text-sm flex-1"
                         :class="coaUnlocked.has(acct.code) ? 'text-green-900 font-medium' : 'text-gray-600'"
                         x-text="acct.name"></span>
-                      <span x-show="coaUnlocked.has(acct.code)" class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">Active</span>
+                      <span x-show="coaUnlocked.has(acct.code)" class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full shrink-0">Active</span>
                     </div>
                   </template>
                 </div>
               </div>
             </template>
+            <!-- Custom accounts -->
+            <div x-show="(coaCustom||[]).length > 0">
+              <p class="text-xs font-bold text-purple-500 uppercase tracking-wider mb-2">Custom Accounts</p>
+              <div class="space-y-1">
+                <template x-for="(acct, idx) in (coaCustom||[])" :key="idx">
+                  <div class="flex items-center gap-3 p-2.5 rounded-lg border border-purple-100 bg-purple-50">
+                    <span class="font-mono text-xs font-bold w-12 shrink-0 text-purple-600" x-text="acct.code"></span>
+                    <span class="text-sm flex-1 text-purple-900" x-text="acct.name"></span>
+                    <button @click="removeCustomAccount(idx)" class="text-red-400 hover:text-red-600 text-xs px-1.5">✕</button>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
         </template>
+        <!-- Add custom account -->
+        <div class="border-t border-gray-100 pt-4">
+          <p class="text-xs font-semibold text-gray-600 mb-2">Add Custom Account</p>
+          <div class="flex gap-2">
+            <input type="text" x-model="newCoaCode" placeholder="Code (e.g. 4090)" maxlength="8"
+              class="w-28 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none font-mono" />
+            <input type="text" x-model="newCoaName" placeholder="Account name"
+              class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+            <button @click="addCustomAccount()" :disabled="!newCoaCode||!newCoaName"
+              class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg">Add</button>
+          </div>
+        </div>
       </div>
-      <div class="px-6 py-3 border-t border-gray-100 shrink-0 flex items-center gap-3 text-xs text-gray-400">
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-200 inline-block"></span> Active (section complete)</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-gray-100 inline-block"></span> Not yet active</span>
+      <div class="px-6 py-3 border-t border-gray-100 shrink-0 flex items-center justify-between">
+        <div class="flex items-center gap-3 text-xs text-gray-400">
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-200 inline-block"></span> Active</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-gray-100 inline-block"></span> Pending</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-purple-200 inline-block"></span> Custom</span>
+        </div>
+        <button @click="saveCustomCOA()" class="px-4 py-1.5 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ EDIT CLIENT MODAL ══ -->
+  <div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <h2 class="font-bold text-gray-900" x-text="'Edit — '+(editForm.company_name||'')"></h2>
+        <button @click="editOpen=false" class="p-2 hover:bg-gray-100 rounded-lg"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Company Name</label>
+            <input type="text" x-model="editForm.company_name" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Access Code</label>
+            <input type="text" x-model="editForm.access_code" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none font-mono" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Service Type</label>
+            <select x-model="editForm.service_type" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none">
+              <option value="implementation">Implementation</option>
+              <option value="bookkeeping">Bookkeeping</option>
+              <option value="training">Training</option>
+              <option value="adhoc">Ad Hoc</option>
+            </select>
+          </div>
+          <div x-show="editForm.service_type==='implementation'">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Template</label>
+            <select x-model="editForm.template" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:border-navy-600 outline-none">
+              <option value="general">General</option>
+              <option value="law_firm">Law Firm</option>
+              <option value="construction_rental">Construction & Rental</option>
+              <option value="medical_supplies">Medical Supplies & Repairs</option>
+              <option value="hr_consultancy">HR Consultancy</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Proposal URL</label>
+          <input type="url" x-model="editForm.proposal_url" placeholder="https://…" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Partner Name (optional)</label>
+          <input type="text" x-model="editForm.partner_name" placeholder="Collaborating firm name" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+        </div>
+        <div x-show="editError" class="text-sm text-red-600" x-text="editError"></div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+        <button @click="editOpen=false" class="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">Cancel</button>
+        <button @click="saveEdit()" :disabled="editSaving" class="px-5 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+          <span x-text="editSaving ? 'Saving…' : 'Save Changes'"></span>
+        </button>
       </div>
     </div>
   </div>
@@ -1053,6 +1141,9 @@ function adminApp() {
 
     // COA
     coaOpen: false, coaLoading: false, coaGroups: [], coaUnlocked: new Set(),
+    coaCustom: [], newCoaCode: '', newCoaName: '',
+    editOpen: false, editSaving: false, editError: '',
+    editForm: { company_name:'', access_code:'', service_type:'implementation', template:'general', proposal_url:'', partner_name:'' },
 
     // Bookkeeping
     bkOpen: false, bkLoading: false, bkPeriods: [], bkTasksByPeriod: {},
@@ -1282,11 +1373,13 @@ function adminApp() {
     // ── COA ──
     async openCOA(c) {
       this.activeCompany=c; this.coaOpen=true; this.coaLoading=true; this.coaUnlocked=new Set();
-      this.coaGroups = c.template==='construction_rental' ? COA_CONSTRUCTION
-        : c.template==='medical_supplies' ? COA_MEDICAL
-        : c.template==='hr_consultancy'   ? COA_HR
-        : COA_LAW_FIRM;
-      // Figure out which sections are "complete" (all non-info items done)
+      this.newCoaCode=''; this.newCoaName='';
+      // Use shared COA_TEMPLATES from sections.js
+      this.coaGroups = (COA_TEMPLATES&&COA_TEMPLATES[c.template]) ? COA_TEMPLATES[c.template] : (COA_TEMPLATES?COA_TEMPLATES.general||[]:[] );
+      // Load custom accounts from client record
+      const {data:clientRow} = await sb.from('onboarding_clients').select('coa_custom').eq('id',c.id).single();
+      this.coaCustom = clientRow?.coa_custom || [];
+      // Figure out which sections are complete
       var secs = SECTION_TEMPLATES[c.template||'law_firm']||SECTION_TEMPLATES.law_firm;
       const {data:responses} = await sb.from('onboarding_responses').select('item_id,is_complete').eq('client_id',c.id);
       const respMap={}; if (responses) responses.forEach(r=>{ respMap[r.item_id]=r.is_complete; });
@@ -1297,6 +1390,40 @@ function adminApp() {
         if (allDone) { var codes=mappings[s.id]||[]; codes.forEach(code=>this.coaUnlocked.add(code)); }
       });
       this.coaLoading=false;
+    },
+    addCustomAccount() {
+      if (!this.newCoaCode||!this.newCoaName) return;
+      this.coaCustom = [...(this.coaCustom||[]), {code:this.newCoaCode.trim(), name:this.newCoaName.trim()}];
+      this.newCoaCode=''; this.newCoaName='';
+    },
+    removeCustomAccount(idx) {
+      this.coaCustom = (this.coaCustom||[]).filter((_,i)=>i!==idx);
+    },
+    async saveCustomCOA() {
+      await sb.from('onboarding_clients').update({coa_custom:this.coaCustom}).eq('id',this.activeCompany.id);
+      this.coaOpen=false;
+    },
+
+    // ── EDIT CLIENT ──
+    openEdit(c) {
+      this.activeCompany=c;
+      this.editForm = { company_name:c.company_name||'', access_code:c.access_code||'',
+        service_type:c.service_type||'implementation', template:c.template||'general',
+        proposal_url:c.proposal_url||'', partner_name:c.partner_name||'' };
+      this.editError=''; this.editSaving=false; this.editOpen=true;
+    },
+    async saveEdit() {
+      this.editSaving=true; this.editError='';
+      const payload = { company_name:this.editForm.company_name, access_code:this.editForm.access_code,
+        service_type:this.editForm.service_type, template:this.editForm.template,
+        proposal_url:this.editForm.proposal_url||null, partner_name:this.editForm.partner_name||null };
+      const {error} = await sb.from('onboarding_clients').update(payload).eq('id',this.activeCompany.id);
+      this.editSaving=false;
+      if (error) { this.editError=error.message; return; }
+      // Update local list
+      var idx=this.companies.findIndex(c=>c.id===this.activeCompany.id);
+      if (idx>-1) this.companies[idx]={...this.companies[idx],...payload};
+      this.editOpen=false;
     },
 
     // ── BOOKKEEPING ──
