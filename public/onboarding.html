@@ -113,12 +113,12 @@
         :class="activeView==='checklist' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
         Checklist
       </button>
-      <button @click="activeView='timeline'"
+      <button x-show="!isConsultant || consultantPerms.timeline" @click="activeView='timeline'"
         class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors"
         :class="activeView==='timeline' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
         Timeline
       </button>
-      <button @click="activeView='accounts'"
+      <button x-show="!isConsultant || consultantPerms.accounts" @click="activeView='accounts'"
         class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors"
         :class="activeView==='accounts' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
         Chart of Accounts
@@ -194,7 +194,7 @@
                         <p class="text-xs text-gray-500 mt-0.5" x-text="item.description"></p>
                       </div>
                       <!-- Consultant: Mark complete toggle -->
-                      <div x-show="isConsultant" class="shrink-0">
+                      <div x-show="isConsultant && consultantPerms.mark_complete" class="shrink-0">
                         <button @click="toggleComplete(item.id)"
                           :class="responses[item.id]?.is_complete ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700'"
                           class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap">
@@ -330,7 +330,7 @@
                           </template>
                         </div>
                         <!-- New comment input -->
-                        <div class="flex gap-2 items-end">
+                        <div x-show="!isConsultant || consultantPerms.comments" class="flex gap-2 items-end">
                           <textarea rows="2" :x-ref="'comment-' + item.id"
                             :id="'comment-input-' + item.id"
                             placeholder="Type your question or comment…"
@@ -580,6 +580,7 @@ function portalApp() {
     proposalUrl: '',
     isConsultant: false,
     isAdminViewing: false,
+    consultantPerms: { mark_complete: true, timeline: true, accounts: true, comments: true },
     showPin: false,
     pinInput: '',
     pinError: '',
@@ -623,7 +624,7 @@ function portalApp() {
 
     async loadSections() {
       const { data } = await sb.from('onboarding_clients')
-        .select('checklist_overrides, template, proposal_url, coa_custom')
+        .select('checklist_overrides, template, proposal_url, coa_custom, consultant_permissions')
         .eq('id', this.clientId)
         .single();
       const ov       = data?.checklist_overrides || {};
@@ -631,6 +632,13 @@ function portalApp() {
       sessionStorage.setItem('ob_template', template);
       this.proposalUrl = data?.proposal_url || '';
       this.coaCustom   = data?.coa_custom   || [];
+      const cp = data?.consultant_permissions || {};
+      this.consultantPerms = {
+        mark_complete: cp.mark_complete !== false,
+        timeline:      cp.timeline      !== false,
+        accounts:      cp.accounts      !== false,
+        comments:      cp.comments      !== false,
+      };
       const base = SECTION_TEMPLATES[template] || SECTION_TEMPLATES.general;
       this.sections = base.map(s => ({
         ...s,
@@ -698,6 +706,9 @@ function portalApp() {
       };
       await sb.from('onboarding_responses').upsert(payload, { onConflict: 'client_id,item_id' });
       this.responses[itemId] = payload;
+      if (this.isConsultant) {
+        sb.from('onboarding_audit_log').insert({ client_id: this.clientId, actor: 'consultant', action: !current ? 'mark_complete' : 'unmark_complete', detail: { item_id: itemId } });
+      }
       this.$nextTick(() => lucide.createIcons());
     },
 
@@ -716,6 +727,9 @@ function portalApp() {
       if (data) {
         if (!this.comments[itemId]) this.comments[itemId] = [];
         this.comments[itemId].push(data);
+      }
+      if (this.isConsultant) {
+        sb.from('onboarding_audit_log').insert({ client_id: this.clientId, actor: 'consultant', action: 'comment', detail: { item_id: itemId } });
       }
       if (el) el.value = '';
     },
@@ -768,11 +782,14 @@ function portalApp() {
       this.coaCustom = [...this.coaCustom, { code, name }];
       this.newCoaCode = ''; this.newCoaName = '';
       await this.saveCoaCustom();
+      if (this.isConsultant) sb.from('onboarding_audit_log').insert({ client_id: this.clientId, actor: 'consultant', action: 'coa_add', detail: { code, name } });
     },
 
     async removeCustomAccount(idx) {
+      const removed = this.coaCustom[idx];
       this.coaCustom = this.coaCustom.filter((_, i) => i !== idx);
       await this.saveCoaCustom();
+      if (this.isConsultant) sb.from('onboarding_audit_log').insert({ client_id: this.clientId, actor: 'consultant', action: 'coa_remove', detail: removed });
     },
 
     async saveCoaCustom() {

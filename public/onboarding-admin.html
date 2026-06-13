@@ -215,6 +215,9 @@
                     <button @click="openTickets(c)" class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold rounded-lg">Tickets</button>
                   </template>
                   <!-- All types -->
+                  <button @click="openPerms(c)" class="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold rounded-lg">Perms</button>
+                  <button @click="switchToConsultant(c)" class="px-3 py-1.5 bg-gold-50 hover:bg-gold-100 text-amber-700 text-xs font-semibold rounded-lg">Consult</button>
+                  <button @click="openAuditLog(c)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg">Audit</button>
                   <button @click="openEdit(c)" class="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg">Edit</button>
                   <button @click="viewCompany(c)" class="px-3 py-1.5 bg-navy-50 hover:bg-navy-100 text-navy-800 text-xs font-semibold rounded-lg">Open</button>
                   <button @click="toggleActive(c)"
@@ -1161,6 +1164,13 @@ function adminApp() {
     newResTitle: '', newResType: 'link', newResUrl: '', newResDesc: '',
     newSessDate: '', newSessTopic: '', newSessHours: '', newSessRecording: '',
 
+    // Consultant permissions
+    permsOpen: false, permsSaving: false, permsCompany: null,
+    permsForm: { mark_complete: true, timeline: true, accounts: true, comments: true },
+
+    // Audit log
+    auditOpen: false, auditLoading: false, auditLog: [],
+
     // Tickets
     ticketsOpen: false, ticketsLoading: false, tickets: [],
     newTicketTitle: '', newTicketDesc: '', newTicketPriority: 'medium', newTicketDue: '', newTicketHours: '',
@@ -1572,6 +1582,52 @@ function adminApp() {
       this.tickets=this.tickets.filter(x=>x.id!==t.id);
     },
 
+    // ── CONSULTANT PERMISSIONS ──
+    openPerms(c) {
+      this.permsCompany = c;
+      const p = c.consultant_permissions || {};
+      this.permsForm = {
+        mark_complete: p.mark_complete !== false,
+        timeline:      p.timeline      !== false,
+        accounts:      p.accounts      !== false,
+        comments:      p.comments      !== false,
+      };
+      this.permsOpen = true;
+    },
+    async savePerms() {
+      this.permsSaving = true;
+      const { error } = await sb.from('onboarding_clients')
+        .update({ consultant_permissions: this.permsForm })
+        .eq('id', this.permsCompany.id);
+      this.permsSaving = false;
+      if (error) { alert('Error: ' + error.message); return; }
+      const idx = this.companies.findIndex(c => c.id === this.permsCompany.id);
+      if (idx > -1) this.companies[idx].consultant_permissions = { ...this.permsForm };
+      this.permsOpen = false;
+    },
+
+    // ── SWITCH TO CONSULTANT VIEW ──
+    switchToConsultant(c) {
+      sessionStorage.setItem('ob_client_id', c.id);
+      sessionStorage.setItem('ob_company_name', c.company_name);
+      sessionStorage.setItem('ob_service_type', c.service_type || 'implementation');
+      sessionStorage.setItem('ob_admin_viewing', 'true');
+      sessionStorage.setItem('portal_consultant', '1');
+      const routes = { implementation:'/onboarding.html', bookkeeping:'/bookkeeping-portal.html', training:'/training-portal.html', adhoc:'/adhoc-portal.html' };
+      window.location.href = routes[c.service_type] || '/onboarding.html';
+    },
+
+    // ── AUDIT LOG ──
+    async openAuditLog(c) {
+      this.activeCompany = c; this.auditLog = []; this.auditOpen = true; this.auditLoading = true;
+      const { data } = await sb.rpc('get_client_audit_log', { p_client_id: c.id, p_limit: 100 });
+      this.auditLog = data || []; this.auditLoading = false;
+    },
+    auditActionLabel(a) {
+      const map = { mark_complete:'Marked complete', unmark_complete:'Unmarked complete', comment:'Left comment', coa_add:'Added COA account', coa_remove:'Removed COA account', login:'Logged in' };
+      return map[a] || a;
+    },
+
     formatBytes(b) { if(!b) return ''; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; },
     formatDate(ts) { return ts ? new Date(ts).toLocaleDateString('en-JM',{day:'numeric',month:'short',year:'numeric'}) : ''; },
     formatDateShort(d) { return d ? new Date(d+'T00:00:00').toLocaleDateString('en-JM',{day:'numeric',month:'short'}) : ''; },
@@ -1579,6 +1635,76 @@ function adminApp() {
   };
 }
 </script>
+<!-- ══ CONSULTANT PERMISSIONS MODAL ══ -->
+<div x-show="permsOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <div>
+        <h2 class="font-bold text-gray-900">Consultant Permissions</h2>
+        <p class="text-xs text-gray-400 mt-0.5" x-text="permsCompany?.company_name"></p>
+      </div>
+      <button @click="permsOpen=false" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <p class="text-xs text-gray-500">Control what the consultant can see and do when viewing this client's portal.</p>
+      <template x-for="[key, label] in [['mark_complete','Mark items complete'],['timeline','View Timeline tab'],['accounts','View Chart of Accounts tab'],['comments','Post comments']]" :key="key">
+        <label class="flex items-center justify-between p-3 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
+          <span class="text-sm font-medium text-gray-700" x-text="label"></span>
+          <button type="button" @click="permsForm[key] = !permsForm[key]"
+            :class="permsForm[key] ? 'bg-green-500' : 'bg-gray-300'"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+            <span :class="permsForm[key] ? 'translate-x-6' : 'translate-x-1'"
+              class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"></span>
+          </button>
+        </label>
+      </template>
+    </div>
+    <div class="px-5 pb-5 flex gap-3">
+      <button @click="savePerms()" :disabled="permsSaving"
+        class="flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors">
+        <span x-text="permsSaving ? 'Saving…' : 'Save Permissions'"></span>
+      </button>
+      <button @click="permsOpen=false" class="px-5 py-2.5 border border-gray-200 text-sm font-medium rounded-xl hover:bg-gray-50">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AUDIT LOG MODAL ══ -->
+<div x-show="auditOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
+      <div>
+        <h2 class="font-bold text-gray-900">Audit Log</h2>
+        <p class="text-xs text-gray-400 mt-0.5" x-text="activeCompany?.company_name"></p>
+      </div>
+      <button @click="auditOpen=false" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-5">
+      <div x-show="auditLoading" class="text-center py-10 text-gray-400 text-sm">Loading…</div>
+      <div x-show="!auditLoading && auditLog.length === 0" class="text-center py-10 text-gray-400 text-sm">No audit entries yet.</div>
+      <div x-show="!auditLoading && auditLog.length > 0" class="space-y-2">
+        <template x-for="entry in auditLog" :key="entry.id">
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+            <div class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+              :class="entry.actor==='admin' ? 'bg-navy-100 text-navy-700' : 'bg-violet-100 text-violet-700'">
+              <span class="text-xs font-bold" x-text="entry.actor==='admin' ? 'ADM' : 'CON'"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900" x-text="auditActionLabel(entry.action)"></p>
+              <p x-show="entry.detail" class="text-xs text-gray-500 mt-0.5 truncate" x-text="JSON.stringify(entry.detail)"></p>
+            </div>
+            <p class="text-xs text-gray-400 shrink-0" x-text="formatDate(entry.logged_at)"></p>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </body>
 </html>
