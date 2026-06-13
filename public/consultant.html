@@ -519,7 +519,7 @@ function consultantApp() {
       const { data, error } = await sb.rpc('validate_consultant_pin', { p_pin: this.pin.trim() });
       this.pinLoading = false;
       this.pin = '';
-      if (error || !data) { this.pinError = 'Incorrect PIN. Try again.'; return; }
+      if (error || !data) { this.pinError = error ? ('Error: ' + error.message) : 'Incorrect PIN. Try again.'; return; }
       sessionStorage.setItem('ob_consultant', '1');
       this.authed = true;
       await this.loadClientList();
