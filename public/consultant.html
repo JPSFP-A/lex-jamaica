@@ -20,12 +20,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/sections.js"></script>
-  <style>
-    [x-cloak]{display:none!important}
-    .tab-btn { @apply px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap; }
-    .tab-active { @apply border-gold-400 text-gold-300; }
-    .tab-idle { @apply border-transparent text-navy-100 hover:text-white; }
-  </style>
+  <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans" x-data="consultantApp()" x-init="init()">
 
@@ -93,11 +88,11 @@
 
     <!-- Per-client tabs -->
     <div x-show="activeClient" class="max-w-5xl mx-auto px-4 flex overflow-x-auto border-t border-navy-800">
-      <button @click="activeTab='checklist'" class="tab-btn" :class="activeTab==='checklist' ? 'tab-active' : 'tab-idle'">Checklist</button>
-      <button @click="activeTab='activity'"  class="tab-btn" :class="activeTab==='activity'  ? 'tab-active' : 'tab-idle'">Activity</button>
-      <button @click="activeTab='files'"     class="tab-btn" :class="activeTab==='files'     ? 'tab-active' : 'tab-idle'">Files</button>
-      <button x-show="perms.timeline" @click="activeTab='gantt'" class="tab-btn" :class="activeTab==='gantt' ? 'tab-active' : 'tab-idle'">Gantt</button>
-      <button x-show="perms.accounts" @click="activeTab='accounts'" class="tab-btn" :class="activeTab==='accounts' ? 'tab-active' : 'tab-idle'">Accounts</button>
+      <button @click="activeTab='checklist'" class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap" :class="activeTab==='checklist' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">Checklist</button>
+      <button @click="activeTab='activity'"  class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap" :class="activeTab==='activity'  ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">Activity</button>
+      <button @click="activeTab='files'"     class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap" :class="activeTab==='files'     ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">Files</button>
+      <button x-show="perms.timeline" @click="activeTab='gantt'" class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap" :class="activeTab==='gantt' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">Gantt</button>
+      <button x-show="perms.accounts" @click="activeTab='accounts'" class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap" :class="activeTab==='accounts' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">Accounts</button>
     </div>
   </header>
 
