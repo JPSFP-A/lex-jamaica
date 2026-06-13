@@ -10,3 +10,5 @@ coverage
 prisma/dev.db
 supabase/.branches
 supabase/.temp
+.vercel
+.env*

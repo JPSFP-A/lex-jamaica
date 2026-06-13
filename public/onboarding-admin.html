@@ -911,7 +911,7 @@
 
 <script>
 const sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON__);
-const ADMIN_PIN = 'ADMIN2025';
+const ADMIN_PIN = null; // validated server-side
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function templateItemCount(template) {
@@ -1166,15 +1166,17 @@ function adminApp() {
     newTicketTitle: '', newTicketDesc: '', newTicketPriority: 'medium', newTicketDue: '', newTicketHours: '',
 
     async init() {
-      this.authed = sessionStorage.getItem('ob_admin') === ADMIN_PIN;
+      this.authed = sessionStorage.getItem('ob_admin') === '1';
       if (this.authed) await this.load();
     },
 
-    checkPin() {
-      if (this.pin === ADMIN_PIN) {
-        sessionStorage.setItem('ob_admin', ADMIN_PIN);
-        this.authed = true; this.load();
-      } else { this.pinError = 'Incorrect PIN.'; }
+    async checkPin() {
+      this.pinError = '';
+      const { data, error } = await sb.rpc('validate_admin_pin', { p_pin: this.pin });
+      this.pin = '';
+      if (error || !data) { this.pinError = 'Incorrect PIN.'; return; }
+      sessionStorage.setItem('ob_admin', '1');
+      this.authed = true; this.load();
     },
 
     async load() {

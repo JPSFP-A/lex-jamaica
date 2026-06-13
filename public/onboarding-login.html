@@ -99,9 +99,11 @@ function loginApp() {
       });
       this.loading = false;
       if (error || !data) {
+        // log_failure recorded inside validate_onboarding_access RPC
         this.error = 'Invalid code. Please check with your consultant.';
         return;
       }
+      // success logged inside RPC
       const company = this.companies.find(c => c.id === this.companyId);
       sessionStorage.setItem('ob_client_id', data);
       sessionStorage.setItem('ob_company_name', company?.company_name || '');

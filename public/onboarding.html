@@ -18,6 +18,7 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="/js/config.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script src="/js/sections.js"></script>
@@ -273,7 +274,7 @@
 
                     <!-- Info only (no input) -->
                     <template x-if="item.type === 'info'">
-                      <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800" x-html="item.infoHtml || ''"></div>
+                      <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800" x-html="DOMPurify.sanitize(item.infoHtml || '')"></div>
                     </template>
 
                     <!-- Upload zone -->
@@ -547,7 +548,7 @@ function portalApp() {
     saving: false,
     saved: false,
     calOpen: false,
-    CONSULTANT_PIN: 'LC2025',
+    CONSULTANT_PIN: null, // validated server-side via RPC
     STORAGE_BUCKET: 'documents',
 
     get totalCount()     { return this.sections.flatMap(s => s.items.filter(i => i.type !== 'info')).length; },
@@ -769,16 +770,18 @@ function portalApp() {
       return max ? new Date(max).toLocaleDateString('en-JM', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     },
 
-    checkPin() {
-      if (this.pinInput === this.CONSULTANT_PIN) {
-        this.isConsultant = true;
-        sessionStorage.setItem('portal_consultant', this.CONSULTANT_PIN);
-        this.showPin = false; this.pinInput = ''; this.pinError = '';
-        this.$nextTick(() => lucide.createIcons());
-      } else {
+    async checkPin() {
+      this.pinError = '';
+      const { data, error } = await window.sb.rpc('validate_consultant_pin', { p_pin: this.pinInput });
+      this.pinInput = '';
+      if (error || !data) {
         this.pinError = 'Incorrect PIN. Please try again.';
-        this.pinInput = '';
+        return;
       }
+      this.isConsultant = true;
+      sessionStorage.setItem('portal_consultant', '1');
+      this.showPin = false; this.pinError = '';
+      this.$nextTick(() => lucide.createIcons());
     },
 
     exitConsultant() {
