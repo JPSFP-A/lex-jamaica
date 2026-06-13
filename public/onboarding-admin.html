@@ -1608,13 +1608,9 @@ function adminApp() {
 
     // ── SWITCH TO CONSULTANT VIEW ──
     switchToConsultant(c) {
-      sessionStorage.setItem('ob_client_id', c.id);
-      sessionStorage.setItem('ob_company_name', c.company_name);
-      sessionStorage.setItem('ob_service_type', c.service_type || 'implementation');
       sessionStorage.setItem('ob_admin_viewing', 'true');
-      sessionStorage.setItem('portal_consultant', '1');
-      const routes = { implementation:'/onboarding.html', bookkeeping:'/bookkeeping-portal.html', training:'/training-portal.html', adhoc:'/adhoc-portal.html' };
-      window.location.href = routes[c.service_type] || '/onboarding.html';
+      sessionStorage.setItem('consultant_preview_client', c.id);
+      window.location.href = '/consultant.html';
     },
 
     // ── AUDIT LOG ──
