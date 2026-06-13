@@ -44,7 +44,11 @@
           </div>
           <span class="font-bold">JW Business Solutions — Admin</span>
         </div>
-        <button @click="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Sign out</button>
+        <div class="flex items-center gap-3">
+          <a href="/consultant.html" class="text-xs text-gold-400 hover:text-gold-300 transition-colors font-medium">Consultant Portal ↗</a>
+          <button @click="pinMgmtOpen=true; loadPins()" class="text-xs text-gray-400 hover:text-white transition-colors">PIN Settings</button>
+          <button @click="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Sign out</button>
+        </div>
       </div>
     </header>
 
@@ -1178,6 +1182,9 @@ function adminApp() {
     // Audit log
     auditOpen: false, auditLoading: false, auditLog: [],
 
+    // PIN management
+    pinMgmtOpen: false, pins: { consultant: '', admin: '' }, pinSaving: false,
+
     // Tickets
     ticketsOpen: false, ticketsLoading: false, tickets: [],
     newTicketTitle: '', newTicketDesc: '', newTicketPriority: 'medium', newTicketDue: '', newTicketHours: '',
@@ -1633,6 +1640,19 @@ function adminApp() {
       return map[a] || a;
     },
 
+    // ── PIN MANAGEMENT ──
+    async loadPins() {
+      const { data } = await sb.rpc('get_portal_pins');
+      if (data) data.forEach(r => { this.pins[r.role] = r.pin; });
+    },
+    async savePin(role) {
+      const pin = this.pins[role]?.trim();
+      if (!pin) return;
+      this.pinSaving = true;
+      await sb.from('portal_pins').upsert({ role, pin }, { onConflict: 'role' });
+      this.pinSaving = false;
+    },
+
     formatBytes(b) { if(!b) return ''; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; },
     formatDate(ts) { return ts ? new Date(ts).toLocaleDateString('en-JM',{day:'numeric',month:'short',year:'numeric'}) : ''; },
     formatDateShort(d) { return d ? new Date(d+'T00:00:00').toLocaleDateString('en-JM',{day:'numeric',month:'short'}) : ''; },
@@ -1640,6 +1660,40 @@ function adminApp() {
   };
 }
 </script>
+<!-- ══ PIN MANAGEMENT MODAL ══ -->
+<div x-show="pinMgmtOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h2 class="font-bold text-gray-900">Portal PIN Settings</h2>
+      <button @click="pinMgmtOpen=false" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Consultant PIN</label>
+        <div class="flex gap-2">
+          <input type="text" x-model="pins.consultant" placeholder="Enter PIN…"
+            class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono tracking-widest focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none" />
+          <button @click="savePin('consultant')" :disabled="pinSaving"
+            class="px-3 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-semibold rounded-lg">Save</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Used to log in at <span class="font-mono">/consultant.html</span></p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Admin PIN</label>
+        <div class="flex gap-2">
+          <input type="text" x-model="pins.admin" placeholder="Enter PIN…"
+            class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono tracking-widest focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none" />
+          <button @click="savePin('admin')" :disabled="pinSaving"
+            class="px-3 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg">Save</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Used to log in at <span class="font-mono">/onboarding-admin.html</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ CONSULTANT PERMISSIONS MODAL ══ -->
 <div x-show="permsOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
