@@ -1642,7 +1642,8 @@ function adminApp() {
 
     // ── PIN MANAGEMENT ──
     async loadPins() {
-      const { data } = await sb.rpc('get_portal_pins');
+      const { data, error } = await sb.rpc('get_portal_pins');
+      if (error) { this.pins = { consultant: '(run migration 010 first)', admin: '(run migration 010 first)' }; return; }
       if (data) data.forEach(r => { this.pins[r.role] = r.pin; });
     },
     async savePin(role) {
