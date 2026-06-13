@@ -20,12 +20,17 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/sections.js"></script>
-  <style>[x-cloak]{display:none!important}</style>
+  <style>
+    [x-cloak]{display:none!important}
+    .tab-btn { @apply px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap; }
+    .tab-active { @apply border-gold-400 text-gold-300; }
+    .tab-idle { @apply border-transparent text-navy-100 hover:text-white; }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans" x-data="consultantApp()" x-init="init()">
 
 <!-- ══ PIN SCREEN ══ -->
-<div x-show="!authed" x-cloak class="min-h-screen bg-navy-900 flex items-center justify-center p-4">
+<div x-show="!authed" class="min-h-screen bg-navy-900 flex items-center justify-center p-4">
   <div class="w-full max-w-sm">
     <div class="text-center mb-8">
       <div class="inline-flex items-center justify-center w-16 h-16 bg-gold-500 rounded-2xl mb-4">
@@ -37,12 +42,12 @@
     <div class="bg-white rounded-2xl shadow-2xl p-8 space-y-5">
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Consultant PIN</label>
-        <input type="password" x-model="pin" @keydown.enter="checkPin()" maxlength="10"
+        <input type="password" x-model="pin" @keydown.enter="checkPin()" maxlength="20"
           class="block w-full rounded-xl border border-gray-200 px-4 py-3 text-center text-lg tracking-widest focus:border-navy-600 focus:ring-1 focus:ring-navy-600 outline-none"
-          placeholder="••••••" />
+          placeholder="Enter PIN" autofocus />
       </div>
       <div x-show="pinError" x-cloak class="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" x-text="pinError"></div>
-      <button @click="checkPin()" :disabled="pinLoading || !pin"
+      <button @click="checkPin()" :disabled="pinLoading || !pin.trim()"
         class="w-full py-3 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
         <span x-show="pinLoading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
         <span x-text="pinLoading ? 'Checking…' : 'Enter Portal'"></span>
@@ -58,23 +63,25 @@
   <header class="bg-navy-900 text-white sticky top-0 z-40 shadow-lg">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <button x-show="activeClient" @click="backToList()" class="p-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors mr-1">
+        <!-- Back to client list -->
+        <button x-show="activeClient" @click="backToList()"
+          class="p-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors mr-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
         </button>
         <div class="w-9 h-9 bg-gold-500 rounded-lg flex items-center justify-center shrink-0">
           <svg class="w-5 h-5 text-navy-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
         </div>
         <div>
-          <p class="text-xs text-navy-100 font-medium uppercase tracking-wider" x-text="activeClient ? activeClient.company_name : 'All Clients'"></p>
-          <h1 class="text-base font-bold leading-tight">Consultant Portal</h1>
+          <p class="text-xs text-navy-100 font-medium uppercase tracking-wider"
+            x-text="activeClient ? activeClient.company_name : 'Consultant Portal'"></p>
+          <h1 class="text-base font-bold leading-tight" x-text="activeClient ? 'Client Dashboard' : 'All Clients'"></h1>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <!-- Admin back button (preview mode) -->
         <button x-show="isAdminPreview" @click="backToAdmin()"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500 text-white hover:bg-amber-400 transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-          Admin
+          Back to Admin
         </button>
         <button x-show="!isAdminPreview" @click="logout()"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-navy-800 text-gray-300 hover:bg-navy-700 transition-colors">
@@ -84,254 +91,370 @@
       </div>
     </div>
 
-    <!-- Client view tabs -->
-    <div x-show="activeClient" class="max-w-5xl mx-auto px-4 flex gap-1">
-      <button @click="activeTab='checklist'"
-        class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors"
-        :class="activeTab==='checklist' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
-        Checklist
-      </button>
-      <button x-show="perms.timeline" @click="activeTab='timeline'"
-        class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors"
-        :class="activeTab==='timeline' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
-        Timeline
-      </button>
-      <button x-show="perms.accounts" @click="activeTab='accounts'"
-        class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors"
-        :class="activeTab==='accounts' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
-        Chart of Accounts
-      </button>
+    <!-- Per-client tabs -->
+    <div x-show="activeClient" class="max-w-5xl mx-auto px-4 flex gap-0 overflow-x-auto">
+      <button @click="activeTab='checklist'" class="tab-btn" :class="activeTab==='checklist' ? 'tab-active' : 'tab-idle'">Checklist</button>
+      <button @click="activeTab='activity'"  class="tab-btn" :class="activeTab==='activity'  ? 'tab-active' : 'tab-idle'">Activity</button>
+      <button @click="activeTab='files'"     class="tab-btn" :class="activeTab==='files'     ? 'tab-active' : 'tab-idle'">Files</button>
+      <button x-show="perms.timeline" @click="activeTab='gantt'" class="tab-btn" :class="activeTab==='gantt' ? 'tab-active' : 'tab-idle'">Gantt</button>
+      <button x-show="perms.accounts" @click="activeTab='accounts'" class="tab-btn" :class="activeTab==='accounts' ? 'tab-active' : 'tab-idle'">Accounts</button>
     </div>
   </header>
 
   <!-- ══ CLIENT LIST ══ -->
   <div x-show="!activeClient" class="max-w-5xl mx-auto px-4 py-6">
-    <div x-show="listLoading" class="text-center py-20 text-gray-400">Loading clients…</div>
-
-    <div x-show="!listLoading" class="space-y-3">
-      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Your Active Clients</p>
-      <template x-for="c in clients" :key="c.id">
-        <button @click="openClient(c)" class="w-full text-left bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-navy-300 hover:shadow-md transition-all">
-          <div class="flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-navy-100 flex items-center justify-center shrink-0">
-                <span class="text-sm font-bold text-navy-700" x-text="c.company_name.charAt(0)"></span>
-              </div>
-              <div class="min-w-0">
-                <p class="font-semibold text-gray-900 truncate" x-text="c.company_name"></p>
-                <p class="text-xs text-gray-400 capitalize" x-text="(c.service_type||'implementation') + ' · ' + (c.template||'general')"></p>
-              </div>
-            </div>
-            <div class="shrink-0 flex items-center gap-3">
-              <div class="text-right">
-                <p class="text-sm font-bold text-navy-700" x-text="clientProgress(c.id) + '%'"></p>
-                <p class="text-xs text-gray-400">complete</p>
-              </div>
-              <div class="w-2 h-2 rounded-full" :class="c.is_active ? 'bg-green-400' : 'bg-gray-300'"></div>
-            </div>
-          </div>
-          <!-- Progress bar -->
-          <div class="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div class="h-full bg-navy-600 rounded-full transition-all" :style="'width:' + clientProgress(c.id) + '%'"></div>
-          </div>
-        </button>
-      </template>
-    </div>
-  </div>
-
-  <!-- ══ CLIENT DETAIL VIEW ══ -->
-  <div x-show="activeClient">
-
-    <!-- CHECKLIST TAB -->
-    <div x-show="activeTab==='checklist'" class="max-w-5xl mx-auto px-4 py-4 space-y-3">
-
-      <!-- Stats bar -->
-      <div x-show="!clientLoading" class="grid grid-cols-3 gap-3 mb-2">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
-          <p class="text-2xl font-bold text-navy-800" x-text="completedCount"></p>
-          <p class="text-xs text-gray-400 mt-0.5">Completed</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
-          <p class="text-2xl font-bold text-gray-500" x-text="totalCount - completedCount"></p>
-          <p class="text-xs text-gray-400 mt-0.5">Pending</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
-          <p class="text-2xl font-bold text-gold-500" x-text="totalCount ? Math.round(completedCount/totalCount*100) + '%' : '0%'"></p>
-          <p class="text-xs text-gray-400 mt-0.5">Progress</p>
-        </div>
+    <div x-show="listLoading" class="text-center py-20 text-gray-400 text-sm">Loading clients…</div>
+    <div x-show="!listLoading">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Your Assigned Clients</p>
+      <div x-show="clients.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm py-16 text-center">
+        <p class="text-gray-500 font-medium">No clients assigned</p>
+        <p class="text-xs text-gray-400 mt-1">Ask admin to enable consultant visibility for clients.</p>
       </div>
-
-      <div x-show="clientLoading" class="text-center py-20 text-gray-400">Loading…</div>
-
-      <template x-for="section in sections" :key="section.id">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <!-- Section header -->
-          <button @click="section.open = !section.open" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-navy-100">
-                <svg class="w-4 h-4 text-navy-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-              </div>
-              <div>
-                <h2 class="font-semibold text-gray-900" x-text="section.title"></h2>
-                <p class="text-xs text-gray-400" x-text="sectionProgress(section)"></p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                :class="sectionComplete(section) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
-                x-text="sectionComplete(section) ? 'Done' : 'In Progress'"></span>
-              <svg :class="section.open ? 'rotate-180' : ''" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-            </div>
-          </button>
-
-          <!-- Items -->
-          <div x-show="section.open" class="border-t border-gray-100 divide-y divide-gray-50">
-            <template x-for="item in section.items" :key="item.id">
-              <div x-show="item.type !== 'info'" class="px-5 py-4">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                      <!-- Completion indicator -->
-                      <div class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                        :class="responses[item.id]?.is_complete ? 'bg-green-500' : 'bg-gray-200'">
-                        <svg x-show="responses[item.id]?.is_complete" class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                      </div>
-                      <p class="text-sm font-semibold text-gray-900" :class="responses[item.id]?.is_complete ? 'line-through text-gray-400' : ''" x-text="item.title"></p>
-                    </div>
-                    <p class="text-xs text-gray-500 ml-7" x-text="item.description"></p>
-
-                    <!-- Client's response (read-only) -->
-                    <div x-show="responses[item.id]?.value" class="ml-7 mt-2 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
-                      <p class="text-xs text-gray-400 font-medium mb-0.5">Client response</p>
-                      <p class="text-xs text-gray-700" x-text="responses[item.id]?.value"></p>
-                    </div>
-
-                    <!-- Uploads -->
-                    <div x-show="(uploads[item.id]||[]).length > 0" class="ml-7 mt-2 flex flex-wrap gap-1.5">
-                      <template x-for="f in (uploads[item.id]||[])" :key="f.id">
-                        <button @click="downloadFile(f)"
-                          class="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs text-blue-700 font-medium transition-colors">
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                          <span x-text="f.file_name"></span>
-                        </button>
-                      </template>
-                    </div>
-
-                    <!-- Comments thread -->
-                    <div class="ml-7 mt-3">
-                      <button @click="item.showComments = !item.showComments"
-                        class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-navy-700 transition-colors">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                        <span x-text="(comments[item.id]||[]).length > 0 ? (comments[item.id]||[]).length + ' comment' + ((comments[item.id]||[]).length > 1 ? 's' : '') : 'Add comment'"></span>
-                        <svg :class="item.showComments ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                      </button>
-
-                      <div x-show="item.showComments" class="mt-2 space-y-2">
-                        <div class="space-y-2 max-h-48 overflow-y-auto">
-                          <template x-for="c in (comments[item.id]||[])" :key="c.id">
-                            <div class="flex gap-2">
-                              <div class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5"
-                                :class="c.author_type==='consultant' ? 'bg-navy-800 text-gold-400' : 'bg-gray-200 text-gray-600'">
-                                <span x-text="c.author_type==='consultant' ? 'C' : 'G'"></span>
-                              </div>
-                              <div class="flex-1 min-w-0">
-                                <div class="flex items-baseline gap-1.5">
-                                  <span class="text-xs font-semibold" :class="c.author_type==='consultant' ? 'text-navy-800' : 'text-gray-700'" x-text="c.author_name"></span>
-                                  <span class="text-xs text-gray-400" x-text="formatTime(c.created_at)"></span>
-                                </div>
-                                <p class="text-xs text-gray-700 mt-0.5 whitespace-pre-wrap" x-text="c.message"></p>
-                              </div>
-                            </div>
-                          </template>
-                        </div>
-                        <!-- Comment input (if permitted) -->
-                        <div x-show="perms.comments" class="flex gap-2 items-end">
-                          <textarea rows="2" :id="'c-input-' + item.id"
-                            placeholder="Add consultant note…"
-                            class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none resize-none"></textarea>
-                          <button @click="addComment(item.id)"
-                            class="shrink-0 px-3 py-2 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg transition-colors">Send</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Mark complete button -->
-                  <div x-show="perms.mark_complete" class="shrink-0">
-                    <button @click="toggleComplete(item.id)"
-                      :class="responses[item.id]?.is_complete ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600 border-green-200' : 'bg-gray-100 text-gray-500 hover:bg-green-50 hover:text-green-700 border-gray-200'"
-                      class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap">
-                      <svg x-show="responses[item.id]?.is_complete" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                      <svg x-show="!responses[item.id]?.is_complete" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
-                      <span x-text="responses[item.id]?.is_complete ? 'Done' : 'Mark done'"></span>
-                    </button>
-                  </div>
+      <div class="space-y-3">
+        <template x-for="c in clients" :key="c.id">
+          <button @click="openClient(c)" class="w-full text-left bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-navy-300 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between gap-4">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-navy-100 flex items-center justify-center shrink-0">
+                  <span class="text-sm font-bold text-navy-700" x-text="c.company_name.charAt(0)"></span>
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-gray-900 truncate" x-text="c.company_name"></p>
+                  <p class="text-xs text-gray-400 capitalize mt-0.5" x-text="(c.service_type||'implementation') + ' · ' + (c.template||'general')"></p>
                 </div>
               </div>
-            </template>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- TIMELINE TAB -->
-    <div x-show="activeTab==='timeline' && perms.timeline" class="max-w-5xl mx-auto px-4 py-6">
-      <div x-show="phases.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm py-20 text-center">
-        <p class="text-gray-500 font-medium">No timeline set</p>
-        <p class="text-xs text-gray-400 mt-1">Set phases in the admin panel.</p>
-      </div>
-      <div x-show="phases.length > 0" class="space-y-3">
-        <template x-for="p in phases" :key="p.id">
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4">
-            <div class="flex items-center justify-between gap-4">
-              <div class="min-w-0">
-                <p class="font-semibold text-gray-900" x-text="p.phase_name"></p>
-                <p class="text-xs text-gray-400 mt-0.5" x-text="formatDate(p.target_start) + ' – ' + formatDate(p.target_end)"></p>
+              <div class="shrink-0 text-right">
+                <p class="text-lg font-bold text-navy-700" x-text="clientProgress(c.id) + '%'"></p>
+                <p class="text-xs text-gray-400">complete</p>
               </div>
-              <span class="text-xs font-semibold px-2.5 py-1 rounded-full shrink-0"
-                :class="p.is_complete ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'"
-                x-text="p.is_complete ? 'Done' : 'Active'"></span>
             </div>
-          </div>
+            <div class="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-navy-600 rounded-full transition-all" :style="'width:' + clientProgress(c.id) + '%'"></div>
+            </div>
+          </button>
         </template>
       </div>
     </div>
+  </div>
 
-    <!-- ACCOUNTS TAB -->
-    <div x-show="activeTab==='accounts' && perms.accounts" class="max-w-5xl mx-auto px-4 py-6 space-y-4">
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <h2 class="font-bold text-gray-900 mb-4">Chart of Accounts</h2>
-        <template x-for="group in coaGroups" :key="group.label">
-          <div class="mb-4">
-            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2" x-text="group.label"></p>
-            <div class="space-y-1">
-              <template x-for="acct in group.accounts" :key="acct.code">
-                <div class="flex items-center gap-3 px-3 py-2 rounded-lg"
-                  :class="coaUnlocked.has(acct.code) ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border border-gray-100'">
-                  <span class="text-xs font-mono font-semibold text-gray-500 w-12 shrink-0" x-text="acct.code"></span>
-                  <span class="text-xs text-gray-700 flex-1" x-text="acct.name"></span>
-                  <span x-show="coaUnlocked.has(acct.code)" class="text-xs text-green-600 font-semibold">Unlocked</span>
-                  <span x-show="!coaUnlocked.has(acct.code)" class="text-xs text-gray-400">Pending</span>
+  <!-- ══ CLIENT DETAIL ══ -->
+  <div x-show="activeClient">
+    <div x-show="clientLoading" class="text-center py-20 text-gray-400 text-sm">Loading…</div>
+    <div x-show="!clientLoading">
+
+      <!-- ── CHECKLIST TAB ── -->
+      <div x-show="activeTab==='checklist'" class="max-w-5xl mx-auto px-4 py-4 space-y-3">
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+            <p class="text-2xl font-bold text-green-600" x-text="completedCount"></p>
+            <p class="text-xs text-gray-400 mt-0.5">Done</p>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+            <p class="text-2xl font-bold text-gray-500" x-text="totalCount - completedCount"></p>
+            <p class="text-xs text-gray-400 mt-0.5">Pending</p>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+            <p class="text-2xl font-bold text-gold-500" x-text="totalCount ? Math.round(completedCount/totalCount*100)+'%' : '0%'"></p>
+            <p class="text-xs text-gray-400 mt-0.5">Progress</p>
+          </div>
+        </div>
+
+        <template x-for="section in sections" :key="section.id">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <button @click="section.open = !section.open"
+              class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-navy-50 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-navy-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </div>
+                <div>
+                  <h2 class="font-semibold text-gray-900" x-text="section.title"></h2>
+                  <p class="text-xs text-gray-400" x-text="sectionProgress(section)"></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  :class="sectionDone(section) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                  x-text="sectionDone(section) ? '✓ Complete' : 'In progress'"></span>
+                <svg :class="section.open ? 'rotate-180' : ''" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+            </button>
+
+            <div x-show="section.open" class="border-t border-gray-100 divide-y divide-gray-50">
+              <template x-for="item in section.items.filter(i => i.type !== 'info')" :key="item.id">
+                <div class="px-5 py-4 space-y-3">
+                  <!-- Item header -->
+                  <div class="flex items-start gap-3">
+                    <div class="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center"
+                      :class="responses[item.id]?.is_complete ? 'bg-green-500' : 'bg-gray-200'">
+                      <svg x-show="responses[item.id]?.is_complete" class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-semibold text-gray-900" :class="responses[item.id]?.is_complete ? 'line-through text-gray-400' : ''" x-text="item.title"></p>
+                      <p class="text-xs text-gray-500 mt-0.5" x-text="item.description"></p>
+                    </div>
+                    <!-- Mark complete -->
+                    <button x-show="perms.mark_complete" @click="toggleComplete(item.id)"
+                      :class="responses[item.id]?.is_complete ? 'bg-green-100 text-green-700 border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200'"
+                      class="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap">
+                      <span x-text="responses[item.id]?.is_complete ? '✓ Done' : 'Mark done'"></span>
+                    </button>
+                  </div>
+
+                  <!-- Editable response (edit permission) -->
+                  <div x-show="perms.edit_responses" class="ml-8">
+                    <template x-if="item.type === 'text'">
+                      <input type="text" :value="responses[item.id]?.value || ''"
+                        @change="saveResponse(item.id, $event.target.value)"
+                        placeholder="Enter response on behalf of client…"
+                        class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none bg-white" />
+                    </template>
+                    <template x-if="item.type === 'textarea'">
+                      <textarea rows="2" @change="saveResponse(item.id, $event.target.value)"
+                        :value="responses[item.id]?.value || ''"
+                        placeholder="Enter response on behalf of client…"
+                        class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none resize-none bg-white"></textarea>
+                    </template>
+                    <!-- Read-only for other types -->
+                    <template x-if="item.type !== 'text' && item.type !== 'textarea' && responses[item.id]?.value">
+                      <div class="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100 text-xs text-gray-700">
+                        <span class="text-gray-400 font-medium mr-1">Client:</span>
+                        <span x-text="responses[item.id]?.value"></span>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Read-only response (no edit permission) -->
+                  <div x-show="!perms.edit_responses && responses[item.id]?.value" class="ml-8 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                    <p class="text-xs text-gray-400 font-medium">Client response</p>
+                    <p class="text-xs text-gray-700 mt-0.5" x-text="responses[item.id]?.value"></p>
+                  </div>
+
+                  <!-- Uploads inline -->
+                  <div x-show="(uploads[item.id]||[]).length > 0" class="ml-8 flex flex-wrap gap-1.5">
+                    <template x-for="f in (uploads[item.id]||[])" :key="f.id">
+                      <button @click="downloadFile(f)"
+                        class="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs text-blue-700 font-medium transition-colors">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span x-text="f.file_name"></span>
+                      </button>
+                    </template>
+                  </div>
+
+                  <!-- Comments -->
+                  <div x-show="perms.comments" class="ml-8">
+                    <button @click="item.showComments = !item.showComments"
+                      class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-navy-700 transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                      <span x-text="(comments[item.id]||[]).length > 0 ? (comments[item.id]||[]).length + ' comment(s)' : 'Add comment'"></span>
+                      <svg :class="item.showComments ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="item.showComments" class="mt-2 space-y-2">
+                      <template x-for="c in (comments[item.id]||[])" :key="c.id">
+                        <div class="flex gap-2">
+                          <div class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                            :class="c.author_type==='consultant' ? 'bg-navy-800 text-gold-400' : 'bg-gray-200 text-gray-600'">
+                            <span x-text="c.author_type==='consultant' ? 'C' : 'G'"></span>
+                          </div>
+                          <div class="flex-1">
+                            <span class="text-xs font-semibold" :class="c.author_type==='consultant' ? 'text-navy-800' : 'text-gray-700'" x-text="c.author_name"></span>
+                            <span class="text-xs text-gray-400 ml-1.5" x-text="fmtTime(c.created_at)"></span>
+                            <p class="text-xs text-gray-700 mt-0.5 whitespace-pre-wrap" x-text="c.message"></p>
+                          </div>
+                        </div>
+                      </template>
+                      <div class="flex gap-2 items-end">
+                        <textarea rows="2" :id="'ci-'+item.id" placeholder="Consultant note…"
+                          class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none resize-none"></textarea>
+                        <button @click="addComment(item.id)"
+                          class="shrink-0 px-3 py-2 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg">Send</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </template>
             </div>
           </div>
         </template>
-        <!-- Custom accounts -->
-        <div x-show="coaCustom.length > 0" class="mt-4 pt-4 border-t border-gray-100">
-          <p class="text-xs font-bold text-purple-600 uppercase tracking-wider mb-2">Custom Accounts</p>
-          <div class="space-y-1">
-            <template x-for="acct in coaCustom" :key="acct.code">
-              <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-purple-50 border border-purple-100">
-                <span class="text-xs font-mono font-semibold text-purple-600 w-12 shrink-0" x-text="acct.code"></span>
-                <span class="text-xs text-gray-700 flex-1" x-text="acct.name"></span>
+      </div>
+
+      <!-- ── ACTIVITY TAB ── -->
+      <div x-show="activeTab==='activity'" class="max-w-5xl mx-auto px-4 py-4 space-y-3">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <!-- Add activity -->
+          <div class="flex gap-3 mb-5">
+            <select x-model="newActType" class="rounded-lg border border-gray-200 px-3 py-2 text-xs focus:border-navy-500 outline-none">
+              <option value="note">Note</option>
+              <option value="todo">To-do</option>
+              <option value="message">Message</option>
+              <option value="update">Update</option>
+              <option value="request">Request</option>
+            </select>
+            <input type="text" x-model="newActContent" @keydown.enter="addActivity()"
+              placeholder="Add activity, note, or to-do…"
+              class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:ring-1 focus:ring-navy-500 outline-none" />
+            <button @click="addActivity()" :disabled="!newActContent.trim()"
+              class="shrink-0 px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg">Add</button>
+          </div>
+          <!-- Activity list -->
+          <div x-show="activities.length === 0" class="text-center py-8 text-gray-400 text-sm">No activity yet.</div>
+          <div class="space-y-2">
+            <template x-for="a in activities" :key="a.id">
+              <div class="flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
+                <div class="shrink-0 w-2 h-2 rounded-full mt-2"
+                  :class="{'bg-gray-400':a.type==='note','bg-amber-400':a.type==='todo','bg-indigo-500':a.type==='message','bg-green-500':a.type==='update','bg-blue-500':a.type==='request'}[a.type]||'bg-gray-300'">
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full capitalize"
+                      :class="{'bg-gray-100 text-gray-600':a.type==='note','bg-amber-50 text-amber-700':a.type==='todo','bg-indigo-50 text-indigo-700':a.type==='message','bg-green-50 text-green-700':a.type==='update','bg-blue-50 text-blue-700':a.type==='request'}[a.type]||'bg-gray-100 text-gray-500'"
+                      x-text="a.type"></span>
+                    <span x-show="a.type==='todo'" class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      :class="a.is_done ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                      x-text="a.is_done ? 'Done' : 'Open'"></span>
+                  </div>
+                  <p class="text-sm text-gray-800" :class="a.is_done ? 'line-through text-gray-400' : ''" x-text="a.content"></p>
+                  <p class="text-xs text-gray-400 mt-0.5" x-text="fmtTime(a.created_at)"></p>
+                </div>
+                <div class="flex gap-1.5 shrink-0">
+                  <button x-show="a.type==='todo'" @click="toggleTodo(a)"
+                    :class="a.is_done ? 'text-green-600 hover:text-gray-400' : 'text-gray-400 hover:text-green-600'"
+                    class="text-xs p-1 rounded transition-colors" :title="a.is_done ? 'Mark open' : 'Mark done'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </button>
+                  <button @click="deleteActivity(a)" class="text-gray-300 hover:text-red-400 p-1 rounded transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
               </div>
             </template>
           </div>
         </div>
       </div>
-    </div>
 
+      <!-- ── FILES TAB ── -->
+      <div x-show="activeTab==='files'" class="max-w-5xl mx-auto px-4 py-4">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h2 class="font-bold text-gray-900 mb-4">All Uploaded Files</h2>
+          <div x-show="allUploads.length === 0" class="text-center py-12 text-gray-400 text-sm">No files uploaded yet.</div>
+          <div class="space-y-2">
+            <template x-for="f in allUploads" :key="f.id">
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors">
+                <div class="shrink-0 w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900 truncate" x-text="f.file_name"></p>
+                  <p class="text-xs text-gray-400" x-text="fmtBytes(f.file_size_bytes) + ' · ' + fmtTime(f.uploaded_at)"></p>
+                </div>
+                <button @click="downloadFile(f)"
+                  class="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                  Download
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── GANTT TAB ── -->
+      <div x-show="activeTab==='gantt' && perms.timeline" class="max-w-5xl mx-auto px-4 py-4 space-y-3">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-gray-900">Project Timeline</h2>
+            <button @click="addPhaseOpen = !addPhaseOpen"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              Add Phase
+            </button>
+          </div>
+
+          <!-- Add phase form -->
+          <div x-show="addPhaseOpen" class="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+            <input type="text" x-model="newPhaseName" placeholder="Phase name…"
+              class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 outline-none" />
+            <div class="flex gap-3">
+              <div class="flex-1">
+                <label class="block text-xs text-gray-500 mb-1">Start date</label>
+                <input type="date" x-model="newPhaseStart" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 outline-none" />
+              </div>
+              <div class="flex-1">
+                <label class="block text-xs text-gray-500 mb-1">End date</label>
+                <input type="date" x-model="newPhaseEnd" class="block w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 outline-none" />
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button @click="addPhase()" :disabled="!newPhaseName || !newPhaseStart || !newPhaseEnd"
+                class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg">Save Phase</button>
+              <button @click="addPhaseOpen=false" class="px-4 py-2 border border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Phase list -->
+          <div x-show="phases.length === 0" class="text-center py-10 text-gray-400 text-sm">No phases yet.</div>
+          <div class="space-y-2">
+            <template x-for="p in phases" :key="p.id">
+              <div class="flex items-center gap-4 p-4 rounded-xl border transition-colors"
+                :class="p.is_complete ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'">
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-gray-900" x-text="p.phase_name"></p>
+                  <p class="text-xs text-gray-400 mt-0.5" x-text="fmtDate(p.target_start) + ' – ' + fmtDate(p.target_end)"></p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    :class="p.is_complete ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'"
+                    x-text="p.is_complete ? 'Done' : 'Active'"></span>
+                  <button @click="togglePhase(p)"
+                    :class="p.is_complete ? 'text-green-600 hover:text-gray-400' : 'text-gray-400 hover:text-green-600'"
+                    class="p-1.5 rounded-lg transition-colors" :title="p.is_complete ? 'Mark active' : 'Mark done'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </button>
+                  <button @click="deletePhase(p)" class="p-1.5 text-gray-300 hover:text-red-400 rounded-lg transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ACCOUNTS TAB ── -->
+      <div x-show="activeTab==='accounts' && perms.accounts" class="max-w-5xl mx-auto px-4 py-4 space-y-4">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h2 class="font-bold text-gray-900 mb-4">Chart of Accounts</h2>
+          <template x-for="group in coaGroups" :key="group.label">
+            <div class="mb-4">
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2" x-text="group.label"></p>
+              <div class="space-y-1">
+                <template x-for="acct in group.accounts" :key="acct.code">
+                  <div class="flex items-center gap-3 px-3 py-2 rounded-lg"
+                    :class="coaUnlocked.has(acct.code) ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border border-gray-100'">
+                    <span class="text-xs font-mono font-semibold text-gray-400 w-12 shrink-0" x-text="acct.code"></span>
+                    <span class="text-xs text-gray-700 flex-1" x-text="acct.name"></span>
+                    <span class="text-xs font-medium" :class="coaUnlocked.has(acct.code) ? 'text-green-600' : 'text-gray-300'"
+                      x-text="coaUnlocked.has(acct.code) ? '✓ Unlocked' : 'Pending'"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+          <div x-show="coaCustom.length > 0" class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-xs font-bold text-purple-600 uppercase tracking-wider mb-2">Custom Accounts</p>
+            <div class="space-y-1">
+              <template x-for="acct in coaCustom" :key="acct.code">
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-purple-50 border border-purple-100">
+                  <span class="text-xs font-mono font-semibold text-purple-600 w-12 shrink-0" x-text="acct.code"></span>
+                  <span class="text-xs text-gray-700 flex-1" x-text="acct.name"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end !clientLoading -->
   </div><!-- end activeClient -->
 </div><!-- end authed -->
 
@@ -344,33 +467,30 @@ function consultantApp() {
     pin: '', pinError: '', pinLoading: false,
     isAdminPreview: false,
 
-    // Client list
     clients: [], listLoading: false, responseSummary: {},
 
-    // Active client
-    activeClient: null,
-    activeTab: 'checklist',
-    clientLoading: false,
-    sections: [],
-    responses: {},
-    comments: {},
-    uploads: {},
-    phases: [],
-    coaGroups: [],
-    coaUnlocked: new Set(),
-    coaCustom: [],
-    perms: { mark_complete: true, timeline: true, accounts: true, comments: true },
+    activeClient: null, activeTab: 'checklist', clientLoading: false,
+    sections: [], responses: {}, comments: {}, uploads: {},
+    phases: [], coaGroups: [], coaUnlocked: new Set(), coaCustom: [],
+
+    perms: { mark_complete: true, timeline: true, accounts: true, comments: true, edit_responses: true },
+
+    // Activity
+    activities: [], newActType: 'note', newActContent: '',
+
+    // Gantt
+    addPhaseOpen: false, newPhaseName: '', newPhaseStart: '', newPhaseEnd: '',
 
     get totalCount()     { return this.sections.flatMap(s => s.items.filter(i => i.type !== 'info')).length; },
     get completedCount() { return Object.values(this.responses).filter(r => r.is_complete).length; },
+    get allUploads()     { return Object.values(this.uploads).flat().sort((a,b) => new Date(b.uploaded_at) - new Date(a.uploaded_at)); },
 
-    sectionProgress(section) {
-      const items = section.items.filter(i => i.type !== 'info');
-      const done  = items.filter(i => this.responses[i.id]?.is_complete).length;
-      return done + ' of ' + items.length + ' complete';
+    sectionProgress(s) {
+      const items = s.items.filter(i => i.type !== 'info');
+      return items.filter(i => this.responses[i.id]?.is_complete).length + ' / ' + items.length + ' done';
     },
-    sectionComplete(section) {
-      const items = section.items.filter(i => i.type !== 'info');
+    sectionDone(s) {
+      const items = s.items.filter(i => i.type !== 'info');
       return items.length > 0 && items.every(i => this.responses[i.id]?.is_complete);
     },
     clientProgress(clientId) {
@@ -379,7 +499,6 @@ function consultantApp() {
     },
 
     async init() {
-      // Admin preview mode: skip PIN
       this.isAdminPreview = sessionStorage.getItem('ob_admin_viewing') === 'true';
       const previewClientId = sessionStorage.getItem('consultant_preview_client');
 
@@ -390,16 +509,17 @@ function consultantApp() {
           const c = this.clients.find(x => x.id === previewClientId);
           if (c) await this.openClient(c);
         }
+        return;
       }
     },
 
     async checkPin() {
       this.pinError = '';
       this.pinLoading = true;
-      const { data, error } = await sb.rpc('validate_consultant_pin', { p_pin: this.pin });
+      const { data, error } = await sb.rpc('validate_consultant_pin', { p_pin: this.pin.trim() });
       this.pinLoading = false;
       this.pin = '';
-      if (error || !data) { this.pinError = 'Incorrect PIN.'; return; }
+      if (error || !data) { this.pinError = 'Incorrect PIN. Try again.'; return; }
       sessionStorage.setItem('ob_consultant', '1');
       this.authed = true;
       await this.loadClientList();
@@ -407,13 +527,13 @@ function consultantApp() {
 
     async loadClientList() {
       this.listLoading = true;
-      const { data: clients } = await sb.from('onboarding_clients').select('*').eq('is_active', true).order('company_name');
+      const { data: clients } = await sb.from('onboarding_clients')
+        .select('*').eq('is_active', true).eq('consultant_visible', true).order('company_name');
       this.clients = clients || [];
 
-      // Load completion counts per client
-      const { data: resp } = await sb.from('onboarding_responses').select('client_id, is_complete');
-      if (resp) {
-        resp.forEach(r => {
+      if (this.clients.length) {
+        const { data: resp } = await sb.from('onboarding_responses').select('client_id, is_complete');
+        if (resp) resp.forEach(r => {
           if (!this.responseSummary[r.client_id]) this.responseSummary[r.client_id] = { done: 0, total: 0 };
           this.responseSummary[r.client_id].total++;
           if (r.is_complete) this.responseSummary[r.client_id].done++;
@@ -426,16 +546,17 @@ function consultantApp() {
       this.activeClient = c;
       this.activeTab = 'checklist';
       this.clientLoading = true;
-      this.sections = []; this.responses = {}; this.comments = {}; this.uploads = {}; this.phases = [];
-      this.coaGroups = []; this.coaUnlocked = new Set(); this.coaCustom = [];
+      this.sections = []; this.responses = {}; this.comments = {}; this.uploads = {};
+      this.phases = []; this.activities = []; this.coaGroups = []; this.coaUnlocked = new Set(); this.coaCustom = [];
+      this.addPhaseOpen = false;
 
-      // Load permissions for this client
       const cp = c.consultant_permissions || {};
       this.perms = {
-        mark_complete: cp.mark_complete !== false,
-        timeline:      cp.timeline      !== false,
-        accounts:      cp.accounts      !== false,
-        comments:      cp.comments      !== false,
+        mark_complete:  cp.mark_complete  !== false,
+        timeline:       cp.timeline       !== false,
+        accounts:       cp.accounts       !== false,
+        comments:       cp.comments       !== false,
+        edit_responses: cp.edit_responses !== false,
       };
 
       await Promise.all([
@@ -444,23 +565,24 @@ function consultantApp() {
         this.loadComments(c.id),
         this.loadUploads(c.id),
         this.loadPhases(c.id),
+        this.loadActivities(c.id),
       ]);
       this.buildCOA(c);
       this.clientLoading = false;
     },
 
     async loadSections(c) {
-      const template = c.template || 'general';
       const { data } = await sb.from('onboarding_clients').select('checklist_overrides, coa_custom').eq('id', c.id).single();
       const ov = data?.checklist_overrides || {};
       this.coaCustom = data?.coa_custom || [];
-      const base = SECTION_TEMPLATES[template] || SECTION_TEMPLATES.general;
+      const base = SECTION_TEMPLATES[c.template || 'general'] || SECTION_TEMPLATES.general;
       this.sections = base.map(s => ({
-        ...s,
-        open: true,
-        items: s.items
-          .filter(i => !ov[i.id]?.hidden)
-          .map(i => ({ ...i, showComments: false, title: ov[i.id]?.title ?? i.title, description: ov[i.id]?.description ?? i.description }))
+        ...s, open: true,
+        items: s.items.filter(i => !ov[i.id]?.hidden).map(i => ({
+          ...i, showComments: false,
+          title: ov[i.id]?.title ?? i.title,
+          description: ov[i.id]?.description ?? i.description,
+        }))
       }));
     },
 
@@ -478,7 +600,7 @@ function consultantApp() {
     },
 
     async loadUploads(clientId) {
-      const { data } = await sb.from('onboarding_uploads').select('*').eq('client_id', clientId);
+      const { data } = await sb.from('onboarding_uploads').select('*').eq('client_id', clientId).order('uploaded_at', { ascending: false });
       if (data) data.forEach(u => {
         if (!this.uploads[u.item_id]) this.uploads[u.item_id] = [];
         this.uploads[u.item_id].push(u);
@@ -490,17 +612,22 @@ function consultantApp() {
       this.phases = data || [];
     },
 
+    async loadActivities(clientId) {
+      const { data } = await sb.from('onboarding_activities').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
+      this.activities = data || [];
+    },
+
     buildCOA(c) {
-      const template = c.template || 'general';
       if (typeof COA_TEMPLATES !== 'undefined') {
-        this.coaGroups = COA_TEMPLATES[template] || COA_TEMPLATES.general || [];
+        this.coaGroups = COA_TEMPLATES[c.template || 'general'] || COA_TEMPLATES.general || [];
       }
       if (typeof COA_MAPPINGS !== 'undefined') {
-        const mappings = COA_MAPPINGS[template] || {};
-        this.sections.forEach(section => {
-          const items = section.items.filter(i => i.type !== 'info');
-          const allDone = items.length > 0 && items.every(i => this.responses[i.id]?.is_complete);
-          if (allDone) (mappings[section.id] || []).forEach(code => this.coaUnlocked.add(code));
+        const mappings = COA_MAPPINGS[c.template || 'general'] || {};
+        this.sections.forEach(s => {
+          const items = s.items.filter(i => i.type !== 'info');
+          if (items.length && items.every(i => this.responses[i.id]?.is_complete)) {
+            (mappings[s.id] || []).forEach(code => this.coaUnlocked.add(code));
+          }
         });
       }
     },
@@ -509,35 +636,93 @@ function consultantApp() {
       if (!this.perms.mark_complete) return;
       const current = this.responses[itemId]?.is_complete || false;
       const payload = {
-        client_id:    this.activeClient.id,
-        item_id:      itemId,
-        value:        this.responses[itemId]?.value || '',
-        is_complete:  !current,
+        client_id: this.activeClient.id, item_id: itemId,
+        value: this.responses[itemId]?.value || '',
+        is_complete: !current,
         completed_at: !current ? new Date().toISOString() : null,
-        updated_at:   new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       await sb.from('onboarding_responses').upsert(payload, { onConflict: 'client_id,item_id' });
       this.responses[itemId] = payload;
-      // Update summary counts
       if (!this.responseSummary[this.activeClient.id]) this.responseSummary[this.activeClient.id] = { done: 0, total: 0 };
       this.responseSummary[this.activeClient.id].done += !current ? 1 : -1;
-      // Audit log
       sb.from('onboarding_audit_log').insert({ client_id: this.activeClient.id, actor: 'consultant', action: !current ? 'mark_complete' : 'unmark_complete', detail: { item_id: itemId } });
+    },
+
+    async saveResponse(itemId, value) {
+      if (!this.perms.edit_responses) return;
+      const existing = this.responses[itemId];
+      const payload = {
+        client_id: this.activeClient.id, item_id: itemId, value,
+        is_complete: existing?.is_complete || false,
+        updated_at: new Date().toISOString(),
+      };
+      await sb.from('onboarding_responses').upsert(payload, { onConflict: 'client_id,item_id' });
+      this.responses[itemId] = { ...existing, ...payload };
     },
 
     async addComment(itemId) {
       if (!this.perms.comments) return;
-      const el = document.getElementById('c-input-' + itemId);
+      const el = document.getElementById('ci-' + itemId);
       const message = el?.value?.trim();
       if (!message) return;
-      const payload = { client_id: this.activeClient.id, item_id: itemId, author_type: 'consultant', author_name: 'Consultant', message };
-      const { data } = await sb.from('onboarding_comments').insert(payload).select().single();
+      const { data } = await sb.from('onboarding_comments').insert({
+        client_id: this.activeClient.id, item_id: itemId,
+        author_type: 'consultant', author_name: 'Consultant', message,
+      }).select().single();
       if (data) {
         if (!this.comments[itemId]) this.comments[itemId] = [];
         this.comments[itemId].push(data);
       }
       if (el) el.value = '';
       sb.from('onboarding_audit_log').insert({ client_id: this.activeClient.id, actor: 'consultant', action: 'comment', detail: { item_id: itemId } });
+    },
+
+    async addActivity() {
+      if (!this.newActContent.trim()) return;
+      const { data } = await sb.from('onboarding_activities').insert({
+        client_id: this.activeClient.id, type: this.newActType, content: this.newActContent.trim(),
+      }).select().single();
+      if (data) this.activities.unshift(data);
+      this.newActContent = '';
+    },
+
+    async toggleTodo(a) {
+      const done = !a.is_done;
+      await sb.from('onboarding_activities').update({ is_done: done, updated_at: new Date().toISOString() }).eq('id', a.id);
+      a.is_done = done;
+    },
+
+    async deleteActivity(a) {
+      if (!confirm('Delete this activity?')) return;
+      await sb.from('onboarding_activities').delete().eq('id', a.id);
+      this.activities = this.activities.filter(x => x.id !== a.id);
+    },
+
+    async addPhase() {
+      if (!this.newPhaseName || !this.newPhaseStart || !this.newPhaseEnd) return;
+      const { data } = await sb.from('onboarding_gantt_phases').insert({
+        client_id: this.activeClient.id,
+        phase_name: this.newPhaseName.trim(),
+        target_start: this.newPhaseStart,
+        target_end: this.newPhaseEnd,
+        is_complete: false,
+      }).select().single();
+      if (data) this.phases.push(data);
+      this.newPhaseName = ''; this.newPhaseStart = ''; this.newPhaseEnd = '';
+      this.addPhaseOpen = false;
+    },
+
+    async togglePhase(p) {
+      const done = !p.is_complete;
+      await sb.from('onboarding_gantt_phases').update({ is_complete: done }).eq('id', p.id);
+      p.is_complete = done;
+    },
+
+    async deletePhase(p) {
+      if (!confirm('Delete this phase?')) return;
+      await sb.from('onboarding_gantt_phases').delete().eq('id', p.id);
+      this.phases = this.phases.filter(x => x.id !== p.id);
     },
 
     async downloadFile(f) {
@@ -553,25 +738,15 @@ function consultantApp() {
 
     backToAdmin() {
       sessionStorage.removeItem('ob_admin_viewing');
-      sessionStorage.removeItem('portal_consultant');
-      sessionStorage.removeItem('ob_client_id');
       sessionStorage.removeItem('consultant_preview_client');
       window.location.href = '/onboarding-admin.html';
     },
 
-    logout() {
-      sessionStorage.removeItem('ob_consultant');
-      this.authed = false;
-    },
+    logout() { sessionStorage.removeItem('ob_consultant'); this.authed = false; },
 
-    formatTime(ts) {
-      if (!ts) return '';
-      return new Date(ts).toLocaleDateString('en-JM', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-    },
-    formatDate(d) {
-      if (!d) return '';
-      return new Date(d + 'T00:00:00').toLocaleDateString('en-JM', { day:'numeric', month:'short', year:'numeric' });
-    },
+    fmtTime(ts) { return ts ? new Date(ts).toLocaleDateString('en-JM', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : ''; },
+    fmtDate(d)  { return d  ? new Date(d + 'T00:00:00').toLocaleDateString('en-JM', { day:'numeric', month:'short', year:'numeric' }) : ''; },
+    fmtBytes(b) { if (!b) return ''; if (b < 1024) return b + ' B'; if (b < 1048576) return (b/1024).toFixed(1) + ' KB'; return (b/1048576).toFixed(1) + ' MB'; },
   };
 }
 </script>
