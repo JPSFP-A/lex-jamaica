@@ -123,6 +123,11 @@
         :class="activeView==='accounts' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
         Chart of Accounts
       </button>
+      <button x-show="isOrganizer || isAdminViewing" @click="activeView='documents'"
+        class="px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors"
+        :class="activeView==='documents' ? 'border-gold-400 text-gold-300' : 'border-transparent text-navy-100 hover:text-white'">
+        Documents
+      </button>
     </div>
   </header>
 
@@ -543,6 +548,93 @@
     </div>
   </div><!-- end accounts view -->
 
+  <!-- ══ DOCUMENTS VIEW ══ -->
+  <div x-show="activeView==='documents'" class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Organizer unlock (if not yet organizer) -->
+    <div x-show="!isOrganizer && !isAdminViewing" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
+      <div class="w-12 h-12 bg-navy-100 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="lock" class="h-5 w-5 text-navy-700"></i>
+      </div>
+      <h3 class="font-bold text-gray-900 mb-1">Organizer Access Required</h3>
+      <p class="text-sm text-gray-500 mb-4">Enter your organizer code to view proposals and key documents.</p>
+      <div class="flex gap-2 max-w-xs mx-auto">
+        <input type="password" x-model="organizerCode" @keydown.enter="unlockOrganizer()"
+          placeholder="Organizer code"
+          class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 focus:ring-1 focus:ring-navy-600 outline-none" />
+        <button @click="unlockOrganizer()" :disabled="organizerUnlocking || !organizerCode"
+          class="px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors">
+          <span x-text="organizerUnlocking ? '…' : 'Unlock'"></span>
+        </button>
+      </div>
+      <p x-show="organizerError" x-cloak class="mt-2 text-xs text-red-600" x-text="organizerError"></p>
+    </div>
+
+    <!-- Documents panel (visible to organizer or admin) -->
+    <template x-if="isOrganizer || isAdminViewing">
+      <div class="space-y-4">
+
+        <!-- Proposal -->
+        <div x-show="clientDocs.proposal_url" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-text" class="h-4 w-4 text-navy-700"></i>
+              <span class="font-semibold text-gray-900 text-sm">Proposal</span>
+            </div>
+            <a :href="clientDocs.proposal_url" target="_blank"
+              class="text-xs text-navy-700 hover:text-navy-900 font-medium flex items-center gap-1">
+              Open in new tab <i data-lucide="external-link" class="h-3 w-3"></i>
+            </a>
+          </div>
+          <iframe :src="clientDocs.proposal_url" class="w-full h-[600px] border-0" loading="lazy"></iframe>
+        </div>
+
+        <!-- Terms of Engagement -->
+        <div x-show="clientDocs.toe_url" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gold-50 border border-gold-200 rounded-lg flex items-center justify-center shrink-0">
+              <i data-lucide="file-check" class="h-5 w-5 text-gold-600"></i>
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900 text-sm">Terms of Engagement</p>
+              <p class="text-xs text-gray-400">Signed agreement · Confidential</p>
+            </div>
+          </div>
+          <a :href="clientDocs.toe_url" target="_blank" download
+            class="flex items-center gap-1.5 px-4 py-2 bg-navy-800 hover:bg-navy-700 text-white text-xs font-semibold rounded-lg transition-colors">
+            <i data-lucide="download" class="h-3.5 w-3.5"></i> Download
+          </a>
+        </div>
+
+        <!-- Extra documents -->
+        <template x-for="(doc, idx) in (clientDocs.files || [])" :key="idx">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-navy-50 border border-navy-200 rounded-lg flex items-center justify-center shrink-0">
+                <i data-lucide="paperclip" class="h-5 w-5 text-navy-600"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-900 text-sm" x-text="doc.label"></p>
+                <p class="text-xs text-gray-400" x-text="doc.note || ''"></p>
+              </div>
+            </div>
+            <a :href="doc.url" target="_blank"
+              class="flex items-center gap-1.5 px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+              <i data-lucide="external-link" class="h-3.5 w-3.5"></i> Open
+            </a>
+          </div>
+        </template>
+
+        <!-- Empty state -->
+        <div x-show="!clientDocs.proposal_url && !clientDocs.toe_url && !(clientDocs.files || []).length"
+          class="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center text-sm text-gray-400">
+          No documents have been added yet. Your consultant will upload them shortly.
+        </div>
+
+      </div>
+    </template>
+  </div><!-- end documents view -->
+
   <!-- ══ SAVE INDICATOR ══ -->
   <div x-show="saving" x-cloak class="fixed bottom-4 right-4 bg-navy-900 text-white text-xs px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
     <span class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span> Saving…
@@ -580,6 +672,11 @@ function portalApp() {
     proposalUrl: '',
     isConsultant: false,
     isAdminViewing: false,
+    isOrganizer: false,
+    organizerUnlocking: false,
+    organizerCode: '',
+    organizerError: '',
+    clientDocs: {},
     consultantPerms: { mark_complete: true, timeline: true, accounts: true, comments: true },
     showPin: false,
     pinInput: '',
@@ -617,6 +714,8 @@ function portalApp() {
         this.isConsultant = sessionStorage.getItem('portal_consultant') === '1';
       }
 
+      this.isOrganizer = sessionStorage.getItem('ob_organizer') === '1';
+
       await Promise.all([this.loadSections(), this.loadResponses(), this.loadComments(), this.loadUploads(), this.loadPhases()]);
       this.buildCOA();
       lucide.createIcons();
@@ -624,7 +723,7 @@ function portalApp() {
 
     async loadSections() {
       const { data } = await sb.from('onboarding_clients')
-        .select('checklist_overrides, template, proposal_url, coa_custom, consultant_permissions')
+        .select('checklist_overrides, template, proposal_url, coa_custom, consultant_permissions, client_documents')
         .eq('id', this.clientId)
         .single();
       const ov       = data?.checklist_overrides || {};
@@ -632,6 +731,7 @@ function portalApp() {
       sessionStorage.setItem('ob_template', template);
       this.proposalUrl = data?.proposal_url || '';
       this.coaCustom   = data?.coa_custom   || [];
+      this.clientDocs  = data?.client_documents || {};
       const cp = data?.consultant_permissions || {};
       this.consultantPerms = {
         mark_complete: cp.mark_complete !== false,
@@ -864,6 +964,25 @@ function portalApp() {
     exitConsultant() {
       this.isConsultant = false;
       sessionStorage.removeItem('portal_consultant');
+    },
+
+    async unlockOrganizer() {
+      this.organizerError = '';
+      if (!this.organizerCode) return;
+      this.organizerUnlocking = true;
+      const { data, error } = await sb.rpc('validate_organizer_code', {
+        p_company_id: this.clientId,
+        p_code: this.organizerCode,
+      });
+      this.organizerUnlocking = false;
+      this.organizerCode = '';
+      if (error || !data) {
+        this.organizerError = 'Incorrect code. Contact your consultant.';
+        return;
+      }
+      this.isOrganizer = true;
+      sessionStorage.setItem('ob_organizer', '1');
+      this.$nextTick(() => lucide.createIcons());
     },
 
     logout() {

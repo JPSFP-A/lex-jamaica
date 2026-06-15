@@ -226,6 +226,7 @@
                   </template>
                   <!-- All types -->
                   <button @click="openPerms(c)" class="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold rounded-lg">Perms</button>
+                  <button @click="openDocs(c)" class="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold rounded-lg">Docs</button>
                   <button @click="switchToConsultant(c)" class="px-3 py-1.5 bg-gold-50 hover:bg-gold-100 text-amber-700 text-xs font-semibold rounded-lg">Consult</button>
                   <button @click="openAuditLog(c)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg">Audit</button>
                   <button @click="openEdit(c)" class="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg">Edit</button>
@@ -1179,6 +1180,11 @@ function adminApp() {
     permsVisible: true,
     permsForm: { mark_complete: true, timeline: true, accounts: true, comments: true, edit_responses: true },
 
+    // Documents
+    docsOpen: false, docsSaving: false, docsCompany: null,
+    docsForm: { proposal_url: '', toe_url: '', organizer_code: '', files: [] },
+    docsNewFile: { label: '', url: '', note: '' },
+
     // Audit log
     auditOpen: false, auditLoading: false, auditLog: [],
 
@@ -1640,6 +1646,46 @@ function adminApp() {
       return map[a] || a;
     },
 
+    // ── DOCUMENTS ──
+    openDocs(c) {
+      this.docsCompany = c;
+      const d = c.client_documents || {};
+      this.docsForm = {
+        proposal_url:   d.proposal_url   || '',
+        toe_url:        d.toe_url        || '',
+        organizer_code: c.organizer_code || '',
+        files:          d.files          || [],
+      };
+      this.docsNewFile = { label: '', url: '', note: '' };
+      this.docsOpen = true;
+    },
+    addDocFile() {
+      if (!this.docsNewFile.label || !this.docsNewFile.url) return;
+      this.docsForm.files = [...this.docsForm.files, { ...this.docsNewFile }];
+      this.docsNewFile = { label: '', url: '', note: '' };
+    },
+    removeDocFile(idx) {
+      this.docsForm.files = this.docsForm.files.filter((_, i) => i !== idx);
+    },
+    async saveDocs() {
+      if (!this.docsCompany) return;
+      this.docsSaving = true;
+      const docs = {
+        proposal_url: this.docsForm.proposal_url.trim(),
+        toe_url:      this.docsForm.toe_url.trim(),
+        files:        this.docsForm.files,
+      };
+      const { error } = await sb.from('onboarding_clients')
+        .update({ client_documents: docs, organizer_code: this.docsForm.organizer_code.trim() || null })
+        .eq('id', this.docsCompany.id);
+      this.docsSaving = false;
+      if (!error) {
+        this.docsCompany.client_documents = docs;
+        this.docsCompany.organizer_code = this.docsForm.organizer_code.trim() || null;
+        this.docsOpen = false;
+      }
+    },
+
     // ── PIN MANAGEMENT ──
     async loadPins() {
       const { data, error } = await sb.rpc('get_portal_pins');
@@ -1661,6 +1707,81 @@ function adminApp() {
   };
 }
 </script>
+<!-- ══ DOCUMENTS MODAL ══ -->
+<div x-show="docsOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div>
+        <h2 class="font-bold text-gray-900">Client Documents</h2>
+        <p class="text-xs text-gray-400 mt-0.5" x-text="docsCompany?.company_name"></p>
+      </div>
+      <button @click="docsOpen=false" class="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">×</button>
+    </div>
+    <div class="p-6 space-y-5">
+
+      <!-- Organizer code -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Organizer / HR Access Code</label>
+        <input type="text" x-model="docsForm.organizer_code" placeholder="e.g. GK-HR-2026"
+          class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-navy-600 focus:ring-1 focus:ring-navy-600 outline-none font-mono tracking-widest" />
+        <p class="text-xs text-gray-400 mt-1">Client's HR/organizer enters this code in their portal to unlock the Documents tab.</p>
+      </div>
+
+      <!-- Proposal URL -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Proposal URL</label>
+        <input type="url" x-model="docsForm.proposal_url" placeholder="https://…"
+          class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-navy-600 focus:ring-1 focus:ring-navy-600 outline-none" />
+        <p class="text-xs text-gray-400 mt-1">Embedded in an iframe in the client's Documents tab.</p>
+      </div>
+
+      <!-- ToE URL -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Terms of Engagement URL</label>
+        <input type="url" x-model="docsForm.toe_url" placeholder="https://… or /docs/…"
+          class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-navy-600 focus:ring-1 focus:ring-navy-600 outline-none" />
+        <p class="text-xs text-gray-400 mt-1">Shown as a download button. Can be a Supabase storage link or any URL.</p>
+      </div>
+
+      <!-- Extra files -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Additional Documents</label>
+        <div class="space-y-2 mb-3">
+          <template x-for="(f, idx) in docsForm.files" :key="idx">
+            <div class="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs">
+              <span class="font-semibold text-gray-700 flex-1" x-text="f.label"></span>
+              <a :href="f.url" target="_blank" class="text-navy-600 hover:underline truncate max-w-[140px]" x-text="f.url"></a>
+              <button @click="removeDocFile(idx)" class="text-red-400 hover:text-red-600 font-bold ml-1">×</button>
+            </div>
+          </template>
+          <div x-show="docsForm.files.length === 0" class="text-xs text-gray-400">No extra documents yet.</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" x-model="docsNewFile.label" placeholder="Label (e.g. Schedule)"
+            class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+          <input type="url" x-model="docsNewFile.url" placeholder="URL"
+            class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+        </div>
+        <input type="text" x-model="docsNewFile.note" placeholder="Note (optional)"
+          class="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-600 outline-none" />
+        <button @click="addDocFile()" :disabled="!docsNewFile.label || !docsNewFile.url"
+          class="mt-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+          + Add Document
+        </button>
+      </div>
+
+      <!-- Save -->
+      <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+        <button @click="docsOpen=false" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+        <button @click="saveDocs()" :disabled="docsSaving"
+          class="px-6 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition-colors">
+          <span x-text="docsSaving ? 'Saving…' : 'Save Documents'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ PIN MANAGEMENT MODAL ══ -->
 <div x-show="pinMgmtOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
